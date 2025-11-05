@@ -19,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@ui/compone
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@ui/components/ui/tooltip';
 import { useMcpServersStore, useSandboxStore, useToolsStore } from '@ui/stores';
 
-import AddCustomServerDialog from './AddCustomServerDialog';
+import AddServerDialog from './AddServerDialog';
 import McpServer from './McpServer';
 import SandboxManagementDialog from './SandboxManagementDialog';
 
@@ -184,10 +184,10 @@ export default function McpServers(_props: McpServersProps) {
                       e.stopPropagation();
                       setAddServerDialogOpen(true);
                     }}
-                    title="Add Custom MCP Server"
+                    title="Add MCP Server"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    <span>Run Custom Server</span>
+                    <span>Add Server</span>
                   </Button>
                   {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </div>
@@ -290,7 +290,7 @@ export default function McpServers(_props: McpServersProps) {
         </Collapsible>
 
         <SandboxManagementDialog open={sandboxManagementDialogOpen} onOpenChange={setSandboxManagementDialogOpen} />
-        <AddCustomServerDialog open={addServerDialogOpen} onOpenChange={setAddServerDialogOpen} />
+        <AddServerDialog open={addServerDialogOpen} onOpenChange={setAddServerDialogOpen} />
       </Card>
     </TooltipProvider>
   );
