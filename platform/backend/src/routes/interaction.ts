@@ -22,7 +22,7 @@ const interactionRoutes: FastifyPluginAsyncZod = async (fastify) => {
         tags: ["Interaction"],
         querystring: z
           .object({
-            agentId: UuidIdSchema.optional().describe("Filter by agent ID"),
+            profileId: UuidIdSchema.optional().describe("Filter by profile ID"),
           })
           .merge(PaginationQuerySchema)
           .merge(
@@ -39,7 +39,7 @@ const interactionRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async (
       {
-        query: { agentId, limit, offset, sortBy, sortDirection },
+        query: { profileId, limit, offset, sortBy, sortDirection },
         user,
         headers,
       },
@@ -48,10 +48,10 @@ const interactionRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const pagination = { limit, offset };
       const sorting = { sortBy, sortDirection };
 
-      if (agentId) {
+      if (profileId) {
         return reply.send(
           await InteractionModel.getAllInteractionsForAgentPaginated(
-            agentId,
+            profileId,
             pagination,
             sorting,
           ),

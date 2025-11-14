@@ -16,7 +16,7 @@ import {
   PromptInputToolbar,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
-import { AllAgentsPrompts } from "@/components/chat/all-agents-prompts";
+import { AllProfilesPrompts } from "@/components/chat/all-profiles-prompts";
 import { ChatMessages } from "@/components/chat/chat-messages";
 import { ConversationList } from "@/components/chat/conversation-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -35,7 +35,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  useChatAgentMcpTools,
+  useChatProfileMcpTools,
   useConversation,
   useConversations,
   useCreateConversation,
@@ -121,11 +121,11 @@ export default function ChatPage() {
   // Fetch conversation with messages
   const { data: conversation } = useConversation(conversationId);
 
-  // Get current agent info
-  const currentAgentId = conversation?.agentId;
+  // Get current profile info
+  const currentProfileId = conversation?.agentId;
 
   // Fetch MCP tools from gateway (same as used in chat backend)
-  const { data: mcpTools = [] } = useChatAgentMcpTools(currentAgentId);
+  const { data: mcpTools = [] } = useChatProfileMcpTools(currentProfileId);
 
   // Group tools by MCP server name (everything before the last __)
   const groupedTools = mcpTools.reduce(
@@ -145,20 +145,20 @@ export default function ChatPage() {
     {} as Record<string, typeof mcpTools>,
   );
 
-  // Create conversation mutation (requires agentId)
+  // Create conversation mutation (requires profileId)
   const createConversationMutation = useCreateConversation();
 
-  // Handle prompt selection from all agents view
-  const handleSelectPromptFromAllAgents = async (
-    agentId: string,
+  // Handle prompt selection from all profiles view
+  const handleSelectPromptFromAllProfiles = async (
+    profileId: string,
     prompt: string,
   ) => {
     // Store the pending prompt to send after conversation loads
     // Empty string means "free chat" - don't send a message
     pendingPromptRef.current = prompt || undefined;
-    // Create conversation for the selected agent
+    // Create conversation for the selected profile
     const newConversation =
-      await createConversationMutation.mutateAsync(agentId);
+      await createConversationMutation.mutateAsync(profileId);
     if (newConversation) {
       selectConversation(newConversation.id);
     }
@@ -303,7 +303,7 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col">
         {!conversationId ? (
-          <AllAgentsPrompts onSelectPrompt={handleSelectPromptFromAllAgents} />
+          <AllProfilesPrompts onSelectPrompt={handleSelectPromptFromAllProfiles} />
         ) : (
           <>
             {error && (
@@ -322,7 +322,7 @@ export default function ChatPage() {
             />
             <div className="border-t p-4">
               <div className="max-w-3xl mx-auto space-y-3">
-                {currentAgentId && Object.keys(groupedTools).length > 0 && (
+                {currentProfileId && Object.keys(groupedTools).length > 0 && (
                   <div className="text-xs text-muted-foreground">
                     <TooltipProvider>
                       <div className="flex flex-wrap gap-2">

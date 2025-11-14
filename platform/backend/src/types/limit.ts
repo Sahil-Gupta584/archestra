@@ -9,7 +9,7 @@ import { schema } from "@/database";
 /**
  * Entity types that can have limits applied
  */
-export const LimitEntityTypeSchema = z.enum(["organization", "team", "agent"]);
+export const LimitEntityTypeSchema = z.enum(["organization", "team", "profile"]);
 export type LimitEntityType = z.infer<typeof LimitEntityTypeSchema>;
 
 /**

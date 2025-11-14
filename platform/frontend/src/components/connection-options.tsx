@@ -4,10 +4,10 @@ import { McpConnectionInstructions } from "@/components/mcp-connection-instructi
 import { ProxyConnectionInstructions } from "@/components/proxy-connection-instructions";
 
 interface ConnectionOptionsProps {
-  agentId?: string;
+  profileId?: string;
 }
 
-export function ConnectionOptions({ agentId }: ConnectionOptionsProps) {
+export function ConnectionOptions({ profileId }: ConnectionOptionsProps) {
   return (
     <div>
       <h3 className="font-medium mb-4">Connection Options</h3>
@@ -28,7 +28,7 @@ export function ConnectionOptions({ agentId }: ConnectionOptionsProps) {
               To enable tools for the agent
             </h4>
           </div>
-          {agentId && <McpConnectionInstructions agentId={agentId} />}
+          {profileId && <McpConnectionInstructions profileId={profileId} />}
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ interface Conversation {
   selectedModel: string;
   userId: string;
   organizationId: string;
-  agentId: string;
+  profileId: string;
   agent: {
     id: string;
     name: string;

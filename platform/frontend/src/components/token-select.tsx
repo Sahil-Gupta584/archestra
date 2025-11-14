@@ -22,7 +22,7 @@ interface TokenSelectProps {
   /** Catalog ID to filter tokens - only shows tokens for the same catalog item */
   catalogId: string;
   /** Agent IDs to filter tokens - only shows tokens that can be used with the specified agents */
-  agentIds: string[];
+  profileIds: string[];
 }
 
 /**
@@ -30,7 +30,7 @@ interface TokenSelectProps {
  * Shows team tokens (authType=team) and user tokens (authType=personal) with owner emails.
  *
  * If catalogId is provided, only shows tokens for that specific catalog item.
- * If agentId is provided, only shows tokens that can be used with the specified agents (validates team membership).
+ * If profileId is provided, only shows tokens that can be used with the specified profiles (validates team membership).
  */
 export function TokenSelect({
   value,
@@ -38,10 +38,10 @@ export function TokenSelect({
   disabled,
   className,
   catalogId,
-  agentIds,
+  profileIds,
 }: TokenSelectProps) {
   const { data: mcpServers, isLoading } = useAgentAvailableTokens({
-    agentIds: agentIds ?? null,
+    profileIds: profileIds ?? null,
     catalogId: catalogId ?? null,
   });
 
@@ -53,7 +53,7 @@ export function TokenSelect({
 
   // Auto-select if there's only one token available
   useEffect(() => {
-    if (!mcpServers || isLoading || value || agentIds.length === 0) return;
+    if (!mcpServers || isLoading || value || profileIds.length === 0) return;
 
     const allTokens = mcpServers?.filter(
       (server) => server.authType === "team" || server.authType === "personal",
@@ -61,7 +61,7 @@ export function TokenSelect({
     if (allTokens.length === 1) {
       onValueChange(allTokens[0].id);
     }
-  }, [mcpServers, agentIds, isLoading, value, onValueChange]);
+  }, [mcpServers, profileIds, isLoading, value, onValueChange]);
 
   return (
     <Select

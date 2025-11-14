@@ -10,41 +10,41 @@ import logger from "@/logging";
 const MCP_GATEWAY_URL = "http://localhost:9000/v1/mcp";
 
 /**
- * Client cache per agent
- * Key: agentId, Value: MCP Client
+ * Client cache per profile
+ * Key: profileId, Value: MCP Client
  */
 const clientCache = new Map<string, Client>();
 
 /**
- * Get or create MCP client for the specified agent
- * Connects to internal MCP Gateway with agent-based authentication
+ * Get or create MCP client for the specified profile
+ * Connects to internal MCP Gateway with profile-based authentication
  *
- * @param agentId - The agent ID to use for authentication
+ * @param profileId - The profile ID to use for authentication
  * @returns MCP Client connected to the gateway, or null if connection fails
  */
 export async function getChatMcpClient(
-  agentId: string,
+  profileId: string,
 ): Promise<Client | null> {
   // Check cache first
-  const cachedClient = clientCache.get(agentId);
+  const cachedClient = clientCache.get(profileId);
   if (cachedClient) {
-    logger.debug({ agentId }, "Returning cached MCP client for agent");
+    logger.debug({ profileId }, "Returning cached MCP client for profile");
     return cachedClient;
   }
 
   logger.info(
-    { agentId, url: MCP_GATEWAY_URL },
-    "Creating new MCP client for agent via gateway",
+    { profileId, url: MCP_GATEWAY_URL },
+    "Creating new MCP client for profile via gateway",
   );
 
   try {
-    // Create StreamableHTTP transport with agent authentication
+    // Create StreamableHTTP transport with profile authentication
     const transport = new StreamableHTTPClientTransport(
       new URL(MCP_GATEWAY_URL),
       {
         requestInit: {
           headers: new Headers({
-            Authorization: `Bearer ${agentId}`,
+            Authorization: `Bearer ${profileId}`,
             Accept: "application/json, text/event-stream",
           }),
         },
@@ -64,19 +64,19 @@ export async function getChatMcpClient(
       },
     );
 
-    logger.info({ agentId }, "Connecting to MCP Gateway...");
+    logger.info({ profileId }, "Connecting to MCP Gateway...");
     await client.connect(transport);
 
-    logger.info({ agentId }, "Successfully connected to MCP Gateway");
+    logger.info({ profileId }, "Successfully connected to MCP Gateway");
 
     // Cache the client
-    clientCache.set(agentId, client);
+    clientCache.set(profileId, client);
 
     return client;
   } catch (error) {
     logger.error(
-      { error, agentId, url: MCP_GATEWAY_URL },
-      "Failed to connect to MCP Gateway for agent",
+      { error, profileId, url: MCP_GATEWAY_URL },
+      "Failed to connect to MCP Gateway for profile",
     );
     return null;
   }
@@ -105,34 +105,34 @@ function normalizeJsonSchema(schema: any): any {
 }
 
 /**
- * Get all MCP tools for the specified agent in AI SDK Tool format
+ * Get all MCP tools for the specified profile in AI SDK Tool format
  * Converts MCP JSON Schema to AI SDK Schema using jsonSchema() helper
  *
- * @param agentId - The agent ID to fetch tools for
+ * @param profileId - The profile ID to fetch tools for
  * @returns Record of tool name to AI SDK Tool object
  */
 export async function getChatMcpTools(
-  agentId: string,
+  profileId: string,
 ): Promise<Record<string, Tool>> {
-  logger.info({ agentId }, "getChatMcpTools() called - fetching client...");
-  const client = await getChatMcpClient(agentId);
+  logger.info({ profileId }, "getChatMcpTools() called - fetching client...");
+  const client = await getChatMcpClient(profileId);
 
   if (!client) {
-    logger.warn({ agentId }, "No MCP client available, returning empty tools");
+    logger.warn({ profileId }, "No MCP client available, returning empty tools");
     return {}; // No tools available
   }
 
   try {
-    logger.info({ agentId }, "MCP client available, listing tools...");
+    logger.info({ profileId }, "MCP client available, listing tools...");
     const { tools: mcpTools } = await client.listTools();
 
     logger.info(
       {
-        agentId,
+        profileId,
         toolCount: mcpTools.length,
         toolNames: mcpTools.map((t) => t.name),
       },
-      "Fetched tools from MCP Gateway for agent",
+      "Fetched tools from MCP Gateway for profile",
     );
 
     // Convert MCP tools to AI SDK Tool format
@@ -159,7 +159,7 @@ export async function getChatMcpTools(
           // biome-ignore lint/suspicious/noExplicitAny: Tool execute function requires flexible typing for MCP integration
           execute: async (args: any) => {
             logger.info(
-              { agentId, toolName: mcpTool.name, arguments: args },
+              { profileId, toolName: mcpTool.name, arguments: args },
               "Executing MCP tool from chat",
             );
 
@@ -170,7 +170,7 @@ export async function getChatMcpTools(
               });
 
               logger.info(
-                { agentId, toolName: mcpTool.name, result },
+                { profileId, toolName: mcpTool.name, result },
                 "MCP tool execution completed",
               );
 
@@ -189,7 +189,7 @@ export async function getChatMcpTools(
               return content;
             } catch (error) {
               logger.error(
-                { agentId, toolName: mcpTool.name, error },
+                { profileId, toolName: mcpTool.name, error },
                 "MCP tool execution failed",
               );
               throw error;
@@ -198,7 +198,7 @@ export async function getChatMcpTools(
         };
       } catch (error) {
         logger.error(
-          { agentId, toolName: mcpTool.name, error },
+          { profileId, toolName: mcpTool.name, error },
           "Failed to convert MCP tool to AI SDK format, skipping",
         );
         // Skip this tool and continue with others
@@ -206,13 +206,13 @@ export async function getChatMcpTools(
     }
 
     logger.info(
-      { agentId, convertedToolCount: Object.keys(aiTools).length },
+      { profileId, convertedToolCount: Object.keys(aiTools).length },
       "Successfully converted MCP tools to AI SDK Tool format",
     );
 
     return aiTools;
   } catch (error) {
-    logger.error({ agentId, error }, "Failed to fetch tools from MCP Gateway");
+    logger.error({ profileId, error }, "Failed to fetch tools from MCP Gateway");
     return {};
   }
 }

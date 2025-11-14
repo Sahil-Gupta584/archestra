@@ -26,7 +26,7 @@ import {
   SupportedProvidersDiscriminatorSchema,
   SupportedProvidersSchema,
 } from "@/types";
-import AgentLabelModel from "./models/agent-label";
+import ProfileLabelModel from "./models/profile-label";
 import * as routes from "./routes";
 
 const {
@@ -204,15 +204,15 @@ const start = async () => {
   try {
     await seedRequiredStartingData();
 
-    // Initialize metrics with keys of custom agent labels
-    const labelKeys = await AgentLabelModel.getAllKeys();
+    // Initialize metrics with keys of custom profile labels
+    const labelKeys = await ProfileLabelModel.getAllKeys();
     initializeMetrics(labelKeys);
 
     // Start metrics server
     await startMetricsServer();
 
     logger.info(
-      `Observability initialized with ${labelKeys.length} agent label keys`,
+      `Observability initialized with ${labelKeys.length} profile label keys`,
     );
 
     startMcpServerRuntime(fastify);

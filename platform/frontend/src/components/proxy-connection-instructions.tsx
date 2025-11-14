@@ -18,18 +18,18 @@ import config from "@/lib/config";
 const { displayProxyUrl: apiProxyUrl } = config.api;
 
 interface ProxyConnectionInstructionsProps {
-  agentId?: string;
+  profileId?: string;
 }
 
 export function ProxyConnectionInstructions({
-  agentId,
+  profileId,
 }: ProxyConnectionInstructionsProps) {
   const [copied, setCopied] = useState(false);
   const [selectedProvider, setSelectedProvider] =
     useState<archestraApiTypes.SupportedProviders>("openai");
 
-  const proxyUrl = agentId
-    ? `${apiProxyUrl}/${selectedProvider}/${agentId}`
+  const proxyUrl = profileId
+    ? `${apiProxyUrl}/${selectedProvider}/${profileId}`
     : `${apiProxyUrl}/${selectedProvider}`;
 
   const handleCopy = useCallback(async () => {

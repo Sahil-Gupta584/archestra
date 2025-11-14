@@ -66,13 +66,13 @@ const onboardingRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async ({ organizationId }, reply) => {
       try {
-        // Get the default agent for this organization
-        const defaultAgent =
+        // Get the default profile for this organization
+        const defaultProfile =
           await AgentModel.getAgentOrCreateDefault(organizationId);
 
         // Create a minimal interaction log to mark onboarding as complete
         await db.insert(schema.interactionsTable).values({
-          agentId: defaultAgent.id,
+          agentId: defaultProfile.id,
           type: "openai:chatCompletions",
           model: "onboarding-complete",
           request: {

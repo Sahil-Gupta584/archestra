@@ -1,9 +1,9 @@
 export { default as AccountModel } from "./account";
-export { default as AgentModel } from "./agent";
-export { default as AgentLabelModel } from "./agent-label";
-export { default as AgentPromptModel } from "./agent-prompt";
-export { default as AgentTeamModel } from "./agent-team";
-export { default as AgentToolModel } from "./agent-tool";
+export { default as ProfileModel } from "./profile";
+export { default as ProfileLabelModel } from "./profile-label";
+export { default as ProfilePromptModel } from "./profile-prompt";
+export { default as ProfileTeamModel } from "./profile-team";
+export { default as ProfileToolModel } from "./profile-tool";
 export { default as ChatSettingsModel } from "./chat-settings";
 export { default as ConversationModel } from "./conversation";
 export { default as DualLlmConfigModel } from "./dual-llm-config";

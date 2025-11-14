@@ -18,7 +18,7 @@ export const ActionSchema = z.enum([
 ]);
 
 export const ResourceSchema = z.enum([
-  "agent",
+  "profile",
   "tool",
   "policy",
   "interaction",
@@ -45,7 +45,7 @@ export const PermissionsSchema = z.partialRecord(
 );
 
 export const allAvailableActions: Record<Resource, Action[]> = {
-  agent: ["create", "read", "update", "delete", "admin"],
+  profile: ["create", "read", "update", "delete", "admin"],
   tool: ["create", "read", "update", "delete"],
   policy: ["create", "read", "update", "delete"],
   dualLlmConfig: ["create", "read", "update", "delete"],
@@ -74,7 +74,7 @@ export const adminRole = ac.newRole({
 });
 
 export const memberRole = ac.newRole({
-  agent: ["read"],
+  profile: ["read"],
   tool: ["create", "read", "update", "delete"],
   policy: ["create", "read", "update", "delete"],
   interaction: ["create", "read", "update", "delete"],
@@ -107,13 +107,13 @@ export type Action = z.infer<typeof ActionSchema>;
 
 /**
  * Permission string format: "resource:action"
- * Examples: "agent:create", "tool:read", "org:delete", "agent:admin", "mcpServer:admin"
+ * Examples: "profile:create", "tool:read", "org:delete", "profile:admin", "mcpServer:admin"
  *
  * Note: "admin" action is only valid for certain resources
  */
 export type Permission =
   | `${Resource}:${"create" | "read" | "update" | "delete"}`
-  | "agent:admin"
+  | "profile:admin"
   | "mcpServer:admin"
   | "mcpServerInstallationRequest:admin";
 
@@ -122,25 +122,25 @@ export type PredefinedRoleName = z.infer<typeof PredefinedRoleNameSchema>;
 export type AnyRoleName = z.infer<typeof AnyRoleName>;
 
 export const RouteId = {
-  // Agent Routes
-  GetAgents: "getAgents",
-  GetAllAgents: "getAllAgents",
-  CreateAgent: "createAgent",
-  GetAgent: "getAgent",
-  GetDefaultAgent: "getDefaultAgent",
-  UpdateAgent: "updateAgent",
-  DeleteAgent: "deleteAgent",
+  // Profile Routes
+  GetProfiles: "getProfiles",
+  GetAllProfiles: "getAllProfiles",
+  CreateProfile: "createProfile",
+  GetProfile: "getProfile",
+  GetDefaultProfile: "getDefaultProfile",
+  UpdateProfile: "updateProfile",
+  DeleteProfile: "deleteProfile",
   GetLabelKeys: "getLabelKeys",
   GetLabelValues: "getLabelValues",
 
-  // Agent Tool Routes
-  AssignToolToAgent: "assignToolToAgent",
+  // Profile Tool Routes
+  AssignToolToProfile: "assignToolToProfile",
   BulkAssignTools: "bulkAssignTools",
-  UnassignToolFromAgent: "unassignToolFromAgent",
-  GetAgentTools: "getAgentTools",
-  GetAllAgentTools: "getAllAgentTools",
-  UpdateAgentTool: "updateAgentTool",
-  GetAgentAvailableTokens: "getAgentAvailableTokens",
+  UnassignToolFromProfile: "unassignToolFromProfile",
+  GetProfileTools: "getProfileTools",
+  GetAllProfileTools: "getAllProfileTools",
+  UpdateProfileTool: "updateProfileTool",
+  GetProfileAvailableTokens: "getProfileAvailableTokens",
 
   // Features Routes
   GetFeatures: "getFeatures",
@@ -239,19 +239,19 @@ export const RouteId = {
   GetDualLlmResultsByInteraction: "getDualLlmResultsByInteraction",
 
   // Proxy Routes - OpenAI
-  OpenAiChatCompletionsWithDefaultAgent:
-    "openAiChatCompletionsWithDefaultAgent",
-  OpenAiChatCompletionsWithAgent: "openAiChatCompletionsWithAgent",
+  OpenAiChatCompletionsWithDefaultProfile:
+    "openAiChatCompletionsWithDefaultProfile",
+  OpenAiChatCompletionsWithProfile: "openAiChatCompletionsWithProfile",
 
   // Proxy Routes - Anthropic
-  AnthropicMessagesWithDefaultAgent: "anthropicMessagesWithDefaultAgent",
-  AnthropicMessagesWithAgent: "anthropicMessagesWithAgent",
+  AnthropicMessagesWithDefaultProfile: "anthropicMessagesWithDefaultProfile",
+  AnthropicMessagesWithProfile: "anthropicMessagesWithProfile",
 
   // Chat Routes
   StreamChat: "streamChat",
   GetChatConversations: "getChatConversations",
   GetChatConversation: "getChatConversation",
-  GetChatAgentMcpTools: "getChatAgentMcpTools",
+  GetChatProfileMcpTools: "getChatProfileMcpTools",
   CreateChatConversation: "createChatConversation",
   UpdateChatConversation: "updateChatConversation",
   DeleteChatConversation: "deleteChatConversation",
@@ -269,10 +269,10 @@ export const RouteId = {
   UpdatePrompt: "updatePrompt",
   DeletePrompt: "deletePrompt",
 
-  // Agent Prompt Routes
-  GetAgentPrompts: "getAgentPrompts",
-  AssignAgentPrompts: "assignAgentPrompts",
-  DeleteAgentPrompt: "deleteAgentPrompt",
+  // Profile Prompt Routes
+  GetProfilePrompts: "getProfilePrompts",
+  AssignProfilePrompts: "assignProfilePrompts",
+  DeleteProfilePrompt: "deleteProfilePrompt",
 
   // Limits Routes
   GetLimits: "getLimits",
@@ -294,7 +294,7 @@ export const RouteId = {
 
   // Statistics Routes
   GetTeamStatistics: "getTeamStatistics",
-  GetAgentStatistics: "getAgentStatistics",
+  GetProfileStatistics: "getProfileStatistics",
   GetModelStatistics: "getModelStatistics",
   GetOverviewStatistics: "getOverviewStatistics",
 
@@ -321,59 +321,59 @@ export type RouteId = (typeof RouteId)[keyof typeof RouteId];
 export const requiredEndpointPermissionsMap: Partial<
   Record<RouteId, Permissions>
 > = {
-  [RouteId.GetAgents]: {
-    agent: ["read"],
+  [RouteId.GetProfiles]: {
+    profile: ["read"],
   },
-  [RouteId.GetAllAgents]: {
-    agent: ["read"],
+  [RouteId.GetAllProfiles]: {
+    profile: ["read"],
   },
-  [RouteId.GetAgent]: {
-    agent: ["read"],
+  [RouteId.GetProfile]: {
+    profile: ["read"],
   },
-  [RouteId.GetDefaultAgent]: {
-    agent: ["read"],
+  [RouteId.GetDefaultProfile]: {
+    profile: ["read"],
   },
-  [RouteId.CreateAgent]: {
-    agent: ["create"],
+  [RouteId.CreateProfile]: {
+    profile: ["create"],
   },
-  [RouteId.UpdateAgent]: {
-    agent: ["update"],
+  [RouteId.UpdateProfile]: {
+    profile: ["update"],
   },
-  [RouteId.DeleteAgent]: {
-    agent: ["delete"],
+  [RouteId.DeleteProfile]: {
+    profile: ["delete"],
   },
-  [RouteId.GetAgentTools]: {
-    agent: ["read"],
+  [RouteId.GetProfileTools]: {
+    profile: ["read"],
     tool: ["read"],
   },
-  [RouteId.GetAllAgentTools]: {
-    agent: ["read"],
+  [RouteId.GetAllProfileTools]: {
+    profile: ["read"],
     tool: ["read"],
   },
-  [RouteId.GetAgentAvailableTokens]: {
-    agent: ["read"],
+  [RouteId.GetProfileAvailableTokens]: {
+    profile: ["read"],
   },
   [RouteId.GetUnassignedTools]: {
     tool: ["read"],
   },
-  [RouteId.AssignToolToAgent]: {
-    agent: ["update"],
+  [RouteId.AssignToolToProfile]: {
+    profile: ["update"],
   },
   [RouteId.BulkAssignTools]: {
-    agent: ["update"],
+    profile: ["update"],
   },
-  [RouteId.UnassignToolFromAgent]: {
-    agent: ["update"],
+  [RouteId.UnassignToolFromProfile]: {
+    profile: ["update"],
   },
-  [RouteId.UpdateAgentTool]: {
-    agent: ["update"],
+  [RouteId.UpdateProfileTool]: {
+    profile: ["update"],
     tool: ["update"],
   },
   [RouteId.GetLabelKeys]: {
-    agent: ["read"],
+    profile: ["read"],
   },
   [RouteId.GetLabelValues]: {
-    agent: ["read"],
+    profile: ["read"],
   },
   [RouteId.GetTools]: {
     tool: ["read"],
@@ -573,8 +573,8 @@ export const requiredEndpointPermissionsMap: Partial<
   [RouteId.GetChatConversation]: {
     conversation: ["read"],
   },
-  [RouteId.GetChatAgentMcpTools]: {
-    agent: ["read"],
+  [RouteId.GetChatProfileMcpTools]: {
+    profile: ["read"],
   },
   [RouteId.CreateChatConversation]: {
     conversation: ["create"],
@@ -612,16 +612,16 @@ export const requiredEndpointPermissionsMap: Partial<
   [RouteId.DeletePrompt]: {
     prompt: ["delete"],
   },
-  [RouteId.GetAgentPrompts]: {
-    agent: ["read"],
+  [RouteId.GetProfilePrompts]: {
+    profile: ["read"],
     prompt: ["read"],
   },
-  [RouteId.AssignAgentPrompts]: {
-    agent: ["update"],
+  [RouteId.AssignProfilePrompts]: {
+    profile: ["update"],
     prompt: ["read"],
   },
-  [RouteId.DeleteAgentPrompt]: {
-    agent: ["update"],
+  [RouteId.DeleteProfilePrompt]: {
+    profile: ["update"],
     prompt: ["read"],
   },
   [RouteId.GetLimits]: {
@@ -663,7 +663,7 @@ export const requiredEndpointPermissionsMap: Partial<
   [RouteId.GetTeamStatistics]: {
     interaction: ["read"],
   },
-  [RouteId.GetAgentStatistics]: {
+  [RouteId.GetProfileStatistics]: {
     interaction: ["read"],
   },
   [RouteId.GetModelStatistics]: {
@@ -673,16 +673,16 @@ export const requiredEndpointPermissionsMap: Partial<
     interaction: ["read"],
   },
   [RouteId.GetOptimizationRules]: {
-    agent: ["read"],
+    profile: ["read"],
   },
   [RouteId.CreateOptimizationRule]: {
-    agent: ["create"],
+    profile: ["create"],
   },
   [RouteId.UpdateOptimizationRule]: {
-    agent: ["update"],
+    profile: ["update"],
   },
   [RouteId.DeleteOptimizationRule]: {
-    agent: ["delete"],
+    profile: ["delete"],
   },
   // Onboarding routes - available to all authenticated users (no specific permissions required)
   [RouteId.GetOnboardingLogsStatus]: {},

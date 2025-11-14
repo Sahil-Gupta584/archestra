@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "@/test";
-import AgentToolModel from "./agent-tool";
+import AgentToolModel from "./profile-tool";
 import ToolModel from "./tool";
 import ToolInvocationPolicyModel from "./tool-invocation-policy";
 

@@ -136,7 +136,7 @@ function LogsTable({
     archestraApiTypes.GetInteractionsData["query"]
   >["sortBy"] =
     sortBy === "agent"
-      ? "agentId"
+      ? "profileId"
       : sortBy === "request.model"
         ? "model"
         : sortBy === "createdAt"

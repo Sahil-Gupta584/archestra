@@ -145,7 +145,7 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
       }
 
       // Create Anthropic client pointing to LLM Proxy
-      // URL format: /v1/anthropic/:agentId/v1/messages
+      // URL format: /v1/anthropic/:profileId/v1/messages
       const anthropic = createAnthropic({
         apiKey: anthropicApiKey,
         baseURL: `http://localhost:${config.api.port}/v1/anthropic/${conversation.agentId}/v1`,
@@ -353,13 +353,13 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   fastify.get(
-    "/api/chat/agents/:agentId/mcp-tools",
+    "/api/chat/profiles/:profileId/mcp-tools",
     {
       schema: {
-        operationId: RouteId.GetChatAgentMcpTools,
-        description: "Get MCP tools available for an agent via MCP Gateway",
+        operationId: RouteId.GetChatProfileMcpTools,
+        description: "Get MCP tools available for a profile via MCP Gateway",
         tags: ["Chat"],
-        params: z.object({ agentId: UuidIdSchema }),
+        params: z.object({ profileId: UuidIdSchema }),
         response: constructResponseSchema(
           z.array(
             z.object({
@@ -371,27 +371,27 @@ const chatRoutes: FastifyPluginAsyncZod = async (fastify) => {
         ),
       },
     },
-    async ({ params: { agentId }, user, headers }, reply) => {
+    async ({ params: { profileId }, user, headers }, reply) => {
       // Check if user is an agent admin
       const { success: isAgentAdmin } = await hasPermission(
         { agent: ["admin"] },
         headers,
       );
 
-      // Verify agent exists and user has access
-      const agent = await AgentModel.findById(agentId, user.id, isAgentAdmin);
+      // Verify profile exists and user has access
+      const profile = await AgentModel.findById(profileId, user.id, isAgentAdmin);
 
-      if (!agent) {
+      if (!profile) {
         return reply.status(404).send({
           error: {
-            message: "Agent not found",
+            message: "Profile not found",
             type: "not_found",
           },
         });
       }
 
       // Fetch MCP tools from gateway (same as used in chat)
-      const mcpTools = await getChatMcpTools(agentId);
+      const mcpTools = await getChatMcpTools(profileId);
 
       // Convert AI SDK Tool format to simple array for frontend
       const tools = Object.entries(mcpTools).map(([name, tool]) => ({

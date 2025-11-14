@@ -13,7 +13,7 @@ export class DynamicInteraction implements InteractionUtils {
   private interactionClass: InteractionUtils;
 
   id: string;
-  agentId: string;
+  profileId: string;
   type: Interaction["type"];
   provider: archestraApiTypes.SupportedProviders;
   endpoint: string;

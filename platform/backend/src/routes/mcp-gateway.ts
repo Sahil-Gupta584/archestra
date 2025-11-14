@@ -64,13 +64,13 @@ function cleanupExpiredSessions(): void {
  * Create a fresh MCP server for a request
  * In stateless mode, we need to create new server instances per request
  */
-async function createAgentServer(
-  agentId: string,
+async function createProfileServer(
+  profileId: string,
   logger: { info: (obj: unknown, msg: string) => void },
 ): Promise<Server> {
   const server = new Server(
     {
-      name: `archestra-agent-${agentId}`,
+      name: `archestra-profile-${profileId}`,
       version: config.api.version,
     },
     {
@@ -80,10 +80,10 @@ async function createAgentServer(
     },
   );
 
-  // Get agent information
-  const agent = await AgentModel.findById(agentId);
+  // Get profile information
+  const agent = await AgentModel.findById(profileId);
   if (!agent) {
-    throw new Error(`Agent not found: ${agentId}`);
+    throw new Error(`Profile not found: ${profileId}`);
   }
 
   // Create a map of Archestra tool names to their titles
@@ -97,7 +97,7 @@ async function createAgentServer(
     // Get MCP tools (from connected MCP servers + Archestra built-in tools)
     // Excludes proxy-discovered tools
     // Fetch fresh on every request to ensure we get newly assigned tools
-    const mcpTools = await ToolModel.getMcpToolsByAgent(agentId);
+    const mcpTools = await ToolModel.getMcpToolsByAgent(profileId);
 
     const toolsList = mcpTools.map(({ name, description, parameters }) => ({
       name,
@@ -111,7 +111,7 @@ async function createAgentServer(
     // Log tools/list request
     try {
       await McpToolCallModel.create({
-        agentId,
+        agentId: profileId,
         mcpServerName: "mcp-gateway",
         method: "tools/list",
         toolCall: null,
@@ -119,7 +119,7 @@ async function createAgentServer(
         toolResult: { tools: toolsList } as any,
       });
       logger.info(
-        { agentId, toolsCount: toolsList.length },
+        { profileId, toolsCount: toolsList.length },
         "✅ Saved tools/list request",
       );
     } catch (dbError) {
@@ -138,7 +138,7 @@ async function createAgentServer(
         if (name.startsWith(archestraToolPrefix)) {
           logger.info(
             {
-              agentId,
+              profileId,
               toolName: name,
             },
             "Archestra MCP tool call received",
@@ -151,7 +151,7 @@ async function createAgentServer(
 
           logger.info(
             {
-              agentId,
+              profileId,
               toolName: name,
             },
             "Archestra MCP tool call completed",
@@ -162,7 +162,7 @@ async function createAgentServer(
 
         logger.info(
           {
-            agentId,
+            profileId,
             toolName: name,
             argumentKeys: args ? Object.keys(args) : [],
             argumentsSize: JSON.stringify(args || {}).length,
@@ -181,12 +181,12 @@ async function createAgentServer(
         };
 
         // Execute the tool call via McpClient
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         if (result.isError) {
           logger.info(
             {
-              agentId,
+              profileId,
               toolName: name,
               error: result.error,
             },
@@ -201,7 +201,7 @@ async function createAgentServer(
 
         logger.info(
           {
-            agentId,
+            profileId,
             toolName: name,
             resultContentLength: Array.isArray(result.content)
               ? JSON.stringify(result.content).length
@@ -233,7 +233,7 @@ async function createAgentServer(
     },
   );
 
-  logger.info({ agentId }, "MCP server instance created");
+  logger.info({ profileId }, "MCP server instance created");
   return server;
 }
 
@@ -242,11 +242,11 @@ async function createAgentServer(
  * We use session-based mode as required by the SDK for JSON responses
  */
 function createTransport(
-  agentId: string,
+  profileId: string,
   clientSessionId: string | undefined,
   logger: { info: (obj: unknown, msg: string) => void },
 ): StreamableHTTPServerTransport {
-  logger.info({ agentId, clientSessionId }, "Creating new transport instance");
+  logger.info({ profileId, clientSessionId }, "Creating new transport instance");
 
   // Create transport with session management
   // If client provides a session ID, we'll use it; otherwise generate one
@@ -255,7 +255,7 @@ function createTransport(
       const sessionId =
         clientSessionId || `session-${Date.now()}-${randomUUID()}`;
       logger.info(
-        { agentId, sessionId, wasClientProvided: !!clientSessionId },
+        { profileId, sessionId, wasClientProvided: !!clientSessionId },
         "Using session ID",
       );
       return sessionId;
@@ -263,14 +263,14 @@ function createTransport(
     enableJsonResponse: true, // Use JSON responses instead of SSE
   });
 
-  logger.info({ agentId }, "Transport instance created");
+  logger.info({ profileId }, "Transport instance created");
   return transport;
 }
 
 /**
- * Extract and validate agent ID from Authorization header bearer token
+ * Extract and validate profile ID from Authorization header bearer token
  */
-function extractAgentIdFromAuth(authHeader: string | undefined): string | null {
+function extractProfileIdFromAuth(authHeader: string | undefined): string | null {
   if (!authHeader) {
     return null;
   }
@@ -282,7 +282,7 @@ function extractAgentIdFromAuth(authHeader: string | undefined): string | null {
 
   const token = match[1];
 
-  // Validate that the token is a valid UUID (agent ID)
+  // Validate that the token is a valid UUID (profile ID)
   try {
     const parsed = UuidIdSchema.parse(token);
     return parsed;
@@ -307,7 +307,7 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
           200: z.object({
             name: z.string(),
             version: z.string(),
-            agentId: z.string(),
+            profileId: z.string(),
             transport: z.string(),
             capabilities: z.object({
               tools: z.boolean(),
@@ -321,24 +321,24 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const agentId = extractAgentIdFromAuth(
+      const profileId = extractProfileIdFromAuth(
         request.headers.authorization as string | undefined,
       );
 
-      if (!agentId) {
+      if (!profileId) {
         reply.status(401);
         return {
           error: "Unauthorized",
           message:
-            "Missing or invalid Authorization header. Expected: Bearer <agent-id>",
+            "Missing or invalid Authorization header. Expected: Bearer <profile-id>",
         };
       }
 
       reply.type("application/json");
       return {
-        name: `archestra-agent-${agentId}`,
+        name: `archestra-profile-${profileId}`,
         version: config.api.version,
-        agentId,
+        profileId,
         transport: "http",
         capabilities: {
           tools: true,
@@ -358,18 +358,18 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const agentId = extractAgentIdFromAuth(
+      const profileId = extractProfileIdFromAuth(
         request.headers.authorization as string | undefined,
       );
 
-      if (!agentId) {
+      if (!profileId) {
         reply.status(401);
         return {
           jsonrpc: "2.0",
           error: {
             code: -32000,
             message:
-              "Unauthorized: Missing or invalid Authorization header. Expected: Bearer <agent-id>",
+              "Unauthorized: Missing or invalid Authorization header. Expected: Bearer <profile-id>",
           },
           id: null,
         };
@@ -381,7 +381,7 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       fastify.log.info(
         {
-          agentId,
+          profileId,
           sessionId,
           method: request.body?.method,
           isInitialize,
@@ -400,7 +400,7 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
         if (sessionId && activeSessions.has(sessionId)) {
           fastify.log.info(
             {
-              agentId,
+              profileId,
               sessionId,
             },
             "Reusing existing session",
@@ -420,7 +420,7 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
           // we can just reuse the existing server/transport
           if (isInitialize) {
             fastify.log.info(
-              { agentId, sessionId },
+              { profileId, sessionId },
               "Re-initialize on existing session - will reuse existing server",
             );
           }
@@ -434,7 +434,7 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
           fastify.log.info(
             {
-              agentId,
+              profileId,
               sessionId: effectiveSessionId,
               clientProvided: !!sessionId,
               sessionExists: activeSessions.has(effectiveSessionId),
@@ -442,13 +442,13 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
             },
             "Initialize request - creating NEW session",
           );
-          server = await createAgentServer(agentId, fastify.log);
-          transport = createTransport(agentId, effectiveSessionId, fastify.log);
+          server = await createProfileServer(profileId, fastify.log);
+          transport = createTransport(profileId, effectiveSessionId, fastify.log);
 
           // Connect server to transport (this also starts the transport)
-          fastify.log.info({ agentId }, "Connecting server to transport");
+          fastify.log.info({ profileId }, "Connecting server to transport");
           await server.connect(transport);
-          fastify.log.info({ agentId }, "Server connected to transport");
+          fastify.log.info({ profileId }, "Server connected to transport");
 
           // Store session immediately before handleRequest
           // This ensures the session exists when notifications/initialized arrives
@@ -459,7 +459,7 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
           });
           fastify.log.info(
             {
-              agentId,
+              profileId,
               sessionId: effectiveSessionId,
               clientProvided: !!sessionId,
             },
@@ -468,7 +468,7 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
         } else {
           // Non-initialize request without a valid session
           fastify.log.error(
-            { agentId, sessionId, method: request.body?.method },
+            { profileId, sessionId, method: request.body?.method },
             "Request received without valid session",
           );
           reply.status(400);
@@ -485,7 +485,7 @@ const mcpGatewayRoutes: FastifyPluginAsyncZod = async (fastify) => {
         // Let the MCP SDK handle the request/response
         // Cast Fastify request/reply to Node.js types expected by SDK
         fastify.log.info(
-          { agentId, sessionId },
+          { profileId, sessionId },
           "Calling transport.handleRequest",
         );
 

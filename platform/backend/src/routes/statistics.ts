@@ -31,7 +31,7 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
               teamId: z.string(),
               teamName: z.string(),
               members: z.number(),
-              agents: z.number(),
+              profiles: z.number(),
               requests: z.number(),
               inputTokens: z.number(),
               outputTokens: z.number(),
@@ -43,7 +43,7 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async ({ query: { timeframe }, user, headers }, reply) => {
-      const { success: isAgentAdmin } = await hasPermission(
+      const { success: isProfileAdmin } = await hasPermission(
         { agent: ["admin"] },
         headers,
       );
@@ -51,7 +51,7 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         await StatisticsModel.getTeamStatistics(
           timeframe,
           user.id,
-          isAgentAdmin,
+          isProfileAdmin,
         ),
       );
     },
@@ -61,15 +61,15 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
     "/api/statistics/agents",
     {
       schema: {
-        operationId: RouteId.GetAgentStatistics,
-        description: "Get agent statistics",
+        operationId: RouteId.GetProfileStatistics,
+        description: "Get profile statistics",
         tags: ["Statistics"],
         querystring: StatisticsQuerySchema,
         response: constructResponseSchema(
           z.array(
             z.object({
-              agentId: z.string(),
-              agentName: z.string(),
+              profileId: z.string(),
+              profileName: z.string(),
               teamName: z.string(),
               requests: z.number(),
               inputTokens: z.number(),
@@ -82,16 +82,16 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async ({ query: { timeframe }, user, headers }, reply) => {
-      const { success: isAgentAdmin } = await hasPermission(
+      const { success: isProfileAdmin } = await hasPermission(
         { agent: ["admin"] },
         headers,
       );
 
       return reply.send(
-        await StatisticsModel.getAgentStatistics(
+        await StatisticsModel.getProfileStatistics(
           timeframe,
           user.id,
-          isAgentAdmin,
+          isProfileAdmin,
         ),
       );
     },
@@ -121,7 +121,7 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async ({ query: { timeframe }, user, headers }, reply) => {
-      const { success: isAgentAdmin } = await hasPermission(
+      const { success: isProfileAdmin } = await hasPermission(
         { agent: ["admin"] },
         headers,
       );
@@ -130,7 +130,7 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         await StatisticsModel.getModelStatistics(
           timeframe,
           user.id,
-          isAgentAdmin,
+          isProfileAdmin,
         ),
       );
     },
@@ -150,14 +150,14 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
             totalTokens: z.number(),
             totalCost: z.number(),
             topTeam: z.string(),
-            topAgent: z.string(),
+            topProfile: z.string(),
             topModel: z.string(),
           }),
         ),
       },
     },
     async ({ query: { timeframe }, user, headers }, reply) => {
-      const { success: isAgentAdmin } = await hasPermission(
+      const { success: isProfileAdmin } = await hasPermission(
         { agent: ["admin"] },
         headers,
       );
@@ -166,7 +166,7 @@ const statisticsRoutes: FastifyPluginAsyncZod = async (fastify) => {
         await StatisticsModel.getOverviewStatistics(
           timeframe,
           user.id,
-          isAgentAdmin,
+          isProfileAdmin,
         ),
       );
     },

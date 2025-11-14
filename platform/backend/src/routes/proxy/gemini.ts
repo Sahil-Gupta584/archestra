@@ -54,24 +54,24 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     headers: Gemini.Types.GenerateContentHeaders,
     reply: FastifyReply,
     model: string,
-    agentId?: string,
+    profileId?: string,
     stream = false,
   ) => {
     let resolvedAgent: Agent;
-    if (agentId) {
-      // If agentId provided via URL, validate it exists
-      const agent = await AgentModel.findById(agentId);
+    if (profileId) {
+      // If profileId provided via URL, validate it exists
+      const agent = await AgentModel.findById(profileId);
       if (!agent) {
         return reply.status(404).send({
           error: {
-            message: `Agent with ID ${agentId} not found`,
+            message: `Profile with ID ${profileId} not found`,
             type: "not_found",
           },
         });
       }
       resolvedAgent = agent;
     } else {
-      // Otherwise get or create default agent
+      // Otherwise get or create default profile
       resolvedAgent = await AgentModel.getAgentOrCreateDefault(
         headers["user-agent"],
       );
@@ -248,7 +248,7 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
         //   // Store the complete interaction
         //   await InteractionModel.create({
-        //     agentId: resolvedAgentId,
+        //     agentId: resolvedProfileId,
         //     type: "gemini:generateContent",
         //     request: body,
         //     response: accumulatedResponse,
@@ -306,7 +306,7 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
         //     // Store the interaction with refusal
         //     await InteractionModel.create({
-        //       agentId: resolvedAgentId,
+        //       agentId: resolvedProfileId,
         //       type: "gemini:generateContent",
         //       request: body,
         //       response: refusalResponse,
@@ -322,7 +322,7 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
           : { input: null, output: null };
 
         await InteractionModel.create({
-          agentId: resolvedAgentId,
+          agentId: resolvedProfileId,
           type: "gemini:generateContent",
           request: body,
           // biome-ignore lint/suspicious/noExplicitAny: Gemini still WIP
@@ -367,18 +367,18 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
    */
   const generateRouteEndpoint = (
     verb: "generateContent" | "streamGenerateContent",
-    includeAgentId = false,
+    includeProfileId = false,
   ) =>
-    `${API_PREFIX}/${includeAgentId ? ":agentId/" : ""}models/:model(^[a-zA-Z0-9-.]+$)::${verb}`;
+    `${API_PREFIX}/${includeProfileId ? ":profileId/" : ""}models/:model(^[a-zA-Z0-9-.]+$)::${verb}`;
 
   /**
-   * Default agent endpoint for Gemini generateContent
+   * Default profile endpoint for Gemini generateContent
    */
   fastify.post(
     generateRouteEndpoint("generateContent"),
     {
       schema: {
-        description: "Generate content using Gemini (default agent)",
+        description: "Generate content using Gemini (default profile)",
         summary: "Generate content using Gemini",
         tags: ["llm-proxy"],
         params: z.object({
@@ -404,13 +404,13 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   /**
-   * Default agent endpoint for Gemini streamGenerateContent
+   * Default profile endpoint for Gemini streamGenerateContent
    */
   fastify.post(
     generateRouteEndpoint("streamGenerateContent"),
     {
       schema: {
-        description: "Stream generated content using Gemini (default agent)",
+        description: "Stream generated content using Gemini (default profile)",
         summary: "Stream generated content using Gemini",
         tags: ["llm-proxy"],
         params: z.object({
@@ -435,17 +435,17 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   /**
-   * Agent-specific endpoint for Gemini generateContent
+   * Profile-specific endpoint for Gemini generateContent
    */
   fastify.post(
     generateRouteEndpoint("generateContent", true),
     {
       schema: {
-        description: "Generate content using Gemini with specific agent",
-        summary: "Generate content using Gemini (specific agent)",
+        description: "Generate content using Gemini with specific profile",
+        summary: "Generate content using Gemini (specific profile)",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
           model: z.string().describe("The model to use"),
         }),
         headers: Gemini.API.GenerateContentHeadersSchema,
@@ -461,25 +461,25 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         request.headers,
         reply,
         request.params.model,
-        request.params.agentId,
+        request.params.profileId,
         false,
       );
     },
   );
 
   /**
-   * Agent-specific endpoint for Gemini streamGenerateContent
+   * Profile-specific endpoint for Gemini streamGenerateContent
    */
   fastify.post(
     generateRouteEndpoint("streamGenerateContent", true),
     {
       schema: {
         description:
-          "Stream generated content using Gemini with specific agent",
-        summary: "Stream generated content using Gemini (specific agent)",
+          "Stream generated content using Gemini with specific profile",
+        summary: "Stream generated content using Gemini (specific profile)",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
           model: z.string().describe("The model to use"),
         }),
         headers: Gemini.API.GenerateContentHeadersSchema,
@@ -494,7 +494,7 @@ const geminiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         request.headers,
         reply,
         request.params.model,
-        request.params.agentId,
+        request.params.profileId,
         true,
       );
     },

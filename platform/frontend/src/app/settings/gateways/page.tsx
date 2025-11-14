@@ -14,7 +14,7 @@ export default function GatewaysSettingsPage() {
 
         <div className="mt-12 space-y-6">
           <div className="border-t pt-6">
-            <ConnectionOptions agentId={defaultAgent?.id} />
+            <ConnectionOptions profileId={defaultAgent?.id} />
           </div>
 
           <div className="border-t pt-6">

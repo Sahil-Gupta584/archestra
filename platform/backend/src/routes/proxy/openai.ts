@@ -25,10 +25,10 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   /**
    * Register HTTP proxy for OpenAI routes
    * Handles both patterns:
-   * - /v1/openai/:agentId/* -> config.llm.openai.baseUrl/* (agentId stripped if UUID)
+   * - /v1/openai/:profileId/* -> config.llm.openai.baseUrl/* (profileId stripped if UUID)
    *  - /v1/openai/* -> config.llm.openai.baseUrl/* (direct proxy)
    *
-   * Chat completions are excluded and handled separately below with full agent support
+   * Chat completions are excluded and handled separately below with full profile support
    */
   await fastify.register(fastifyHttpProxy, {
     upstream: config.llm.openai.baseUrl,
@@ -95,13 +95,13 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     body: OpenAi.Types.ChatCompletionsRequest,
     headers: OpenAi.Types.ChatCompletionsHeaders,
     reply: FastifyReply,
-    agentId?: string,
+    profileId?: string,
   ) => {
     const { messages, tools, stream } = body;
 
     fastify.log.info(
       {
-        agentId,
+        profileId,
         model: body.model,
         stream,
         messagesCount: messages.length,
@@ -112,20 +112,20 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     );
 
     let resolvedAgent: Agent;
-    if (agentId) {
-      // If agentId provided via URL, validate it exists
-      const agent = await AgentModel.findById(agentId);
+    if (profileId) {
+      // If profileId provided via URL, validate it exists
+      const agent = await AgentModel.findById(profileId);
       if (!agent) {
         return reply.status(404).send({
           error: {
-            message: `Agent with ID ${agentId} not found`,
+            message: `Profile with ID ${profileId} not found`,
             type: "not_found",
           },
         });
       }
       resolvedAgent = agent;
     } else {
-      // Otherwise get or create default agent
+      // Otherwise get or create default profile
       resolvedAgent = await AgentModel.getAgentOrCreateDefault(
         headers["user-agent"],
       );
@@ -134,8 +134,8 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     const resolvedAgentId = resolvedAgent.id;
 
     fastify.log.info(
-      { resolvedAgentId, wasExplicit: !!agentId },
-      "Agent resolved",
+      { resolvedAgentId, wasExplicit: !!profileId },
+      "Profile resolved",
     );
 
     const { authorization: openAiApiKey } = headers;
@@ -575,7 +575,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
         // Store the complete interaction
         await InteractionModel.create({
-          agentId: resolvedAgentId,
+          agentId: resolvedProfileId,
           type: "openai:chatCompletions",
           request: body,
           response: {
@@ -687,7 +687,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
         // Store the complete interaction
         await InteractionModel.create({
-          agentId: resolvedAgentId,
+          agentId: resolvedProfileId,
           type: "openai:chatCompletions",
           request: body,
           response,
@@ -719,16 +719,16 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   };
 
   /**
-   * No agentId is provided -- agent is created/fetched based on the user-agent header
-   * or if the user-agent header is not present, a default agent is used
+   * No profileId is provided -- profile is created/fetched based on the user-agent header
+   * or if the user-agent header is not present, a default profile is used
    */
   fastify.post(
     `${API_PREFIX}/${CHAT_COMPLETIONS_SUFFIX}`,
     {
       schema: {
-        operationId: RouteId.OpenAiChatCompletionsWithDefaultAgent,
+        operationId: RouteId.OpenAiChatCompletionsWithDefaultProfile,
         description:
-          "Create a chat completion with OpenAI (uses default agent)",
+          "Create a chat completion with OpenAI (uses default profile)",
         tags: ["llm-proxy"],
         body: OpenAi.API.ChatCompletionRequestSchema,
         headers: OpenAi.API.ChatCompletionsHeadersSchema,
@@ -743,18 +743,18 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   );
 
   /**
-   * An agentId is provided -- agent is fetched based on the agentId
+   * A profileId is provided -- profile is fetched based on the profileId
    */
   fastify.post(
-    `${API_PREFIX}/:agentId/${CHAT_COMPLETIONS_SUFFIX}`,
+    `${API_PREFIX}/:profileId/${CHAT_COMPLETIONS_SUFFIX}`,
     {
       schema: {
-        operationId: RouteId.OpenAiChatCompletionsWithAgent,
+        operationId: RouteId.OpenAiChatCompletionsWithProfile,
         description:
-          "Create a chat completion with OpenAI for a specific agent",
+          "Create a chat completion with OpenAI for a specific profile",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: OpenAi.API.ChatCompletionRequestSchema,
         headers: OpenAi.API.ChatCompletionsHeadersSchema,
@@ -764,7 +764,7 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async ({ body, headers, params }, reply) => {
-      return handleChatCompletion(body, headers, reply, params.agentId);
+      return handleChatCompletion(body, headers, reply, params.profileId);
     },
   );
 };

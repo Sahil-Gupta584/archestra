@@ -70,15 +70,15 @@ export function ArchestraArchitectureDiagram() {
   return (
     <>
       <p className="text-sm text-muted-foreground mb-8">
-        Archestra provides two ways to connect your agent: via LLM Proxy (for AI
+        Archestra provides two ways to connect your profile: via LLM Proxy (for AI
         conversations) or MCP Gateway (for tool access). It will collect
-        information about your agent, tools, and data from the traffic.
+        information about your profile, tools, and data from the traffic.
         <br />
         <br />
         Below are instructions for how to connect to Archestra using a default
-        agent. If you'd like to configure a specific agent, you can do so in the{" "}
-        <Link href="/agents" className="text-blue-500">
-          Agents
+        profile. If you'd like to configure a specific profile, you can do so in the{" "}
+        <Link href="/profiles" className="text-blue-500">
+          Profiles
         </Link>{" "}
         page.
       </p>

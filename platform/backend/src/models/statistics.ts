@@ -1,6 +1,6 @@
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import db, { schema } from "@/database";
-import AgentTeamModel from "./agent-team";
+import AgentTeamModel from "./profile-team";
 
 export type TimeFrame = "1h" | "24h" | "7d" | "30d" | "90d" | "12m" | "all";
 
@@ -13,7 +13,7 @@ export interface TeamStatistics {
   teamId: string;
   teamName: string;
   members: number;
-  agents: number;
+  profiles: number;
   requests: number;
   inputTokens: number;
   outputTokens: number;
@@ -21,9 +21,9 @@ export interface TeamStatistics {
   timeSeries: TimeSeriesPoint[];
 }
 
-export interface AgentStatistics {
-  agentId: string;
-  agentName: string;
+export interface ProfileStatistics {
+  profileId: string;
+  profileName: string;
   teamName: string;
   requests: number;
   inputTokens: number;
@@ -47,7 +47,7 @@ export interface OverviewStatistics {
   totalTokens: number;
   totalCost: number;
   topTeam: string;
-  topAgent: string;
+  topProfile: string;
   topModel: string;
 }
 
@@ -65,10 +65,10 @@ export interface TeamTimeSeriesData extends BaseTimeSeriesData {
   teamName: string;
 }
 
-// Agent-specific time series data
-export interface AgentTimeSeriesData extends BaseTimeSeriesData {
-  agentId: string;
-  agentName: string;
+// Profile-specific time series data
+export interface ProfileTimeSeriesData extends BaseTimeSeriesData {
+  profileId: string;
+  profileName: string;
   teamName: string | null;
 }
 
@@ -81,7 +81,7 @@ export interface ModelTimeSeriesData extends BaseTimeSeriesData {
 export type TimeSeriesData =
   | BaseTimeSeriesData
   | TeamTimeSeriesData
-  | AgentTimeSeriesData
+  | ProfileTimeSeriesData
   | ModelTimeSeriesData;
 
 class StatisticsModel {
@@ -282,21 +282,21 @@ class StatisticsModel {
   static async getTeamStatistics(
     timeframe: TimeFrame,
     userId?: string,
-    isAgentAdmin?: boolean,
+    isProfileAdmin?: boolean,
   ): Promise<TeamStatistics[]> {
     const interval = StatisticsModel.getTimeframeInterval(timeframe);
     const timeBucket = StatisticsModel.getTimeBucket(timeframe);
     const { avgInputPrice, avgOutputPrice } =
       await StatisticsModel.getAverageTokenPrices();
 
-    // Get accessible agent IDs for users that are not agent admins
-    let accessibleAgentIds: string[] = [];
-    if (userId && !isAgentAdmin) {
-      accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+    // Get accessible profile IDs for users that are not profile admins
+    let accessibleProfileIds: string[] = [];
+    if (userId && !isProfileAdmin) {
+      accessibleProfileIds = await AgentTeamModel.getUserAccessibleAgentIds(
         userId,
         false,
       );
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return [];
       }
     }
@@ -330,8 +330,8 @@ class StatisticsModel {
             schema.interactionsTable.createdAt,
             sql`NOW() - INTERVAL ${sql.raw(`'${interval}'`)}`,
           ),
-          ...(accessibleAgentIds.length > 0
-            ? [inArray(schema.agentsTable.id, accessibleAgentIds)]
+          ...(accessibleProfileIds.length > 0
+            ? [inArray(schema.agentsTable.id, accessibleProfileIds)]
             : []),
         ),
       )
@@ -374,11 +374,11 @@ class StatisticsModel {
       )
       .groupBy(schema.teamsTable.id);
 
-    // Get agent counts per team
-    const teamAgentCounts = await db
+    // Get profile counts per team
+    const teamProfileCounts = await db
       .select({
         teamId: schema.teamsTable.id,
-        agentCount: sql<number>`CAST(COUNT(DISTINCT ${schema.agentTeamsTable.agentId}) AS INTEGER)`,
+        profileCount: sql<number>`CAST(COUNT(DISTINCT ${schema.agentTeamsTable.agentId}) AS INTEGER)`,
       })
       .from(schema.teamsTable)
       .leftJoin(
@@ -402,14 +402,14 @@ class StatisticsModel {
         const memberCount =
           teamMemberCounts.find((t) => t.teamId === row.teamId)?.memberCount ||
           0;
-        const agentCount =
-          teamAgentCounts.find((t) => t.teamId === row.teamId)?.agentCount || 0;
+        const profileCount =
+          teamProfileCounts.find((t) => t.teamId === row.teamId)?.profileCount || 0;
 
         teamMap.set(row.teamId, {
           teamId: row.teamId,
           teamName: row.teamName,
           members: memberCount,
-          agents: agentCount,
+          profiles: profileCount,
           requests: 0,
           inputTokens: 0,
           outputTokens: 0,
@@ -434,34 +434,34 @@ class StatisticsModel {
   }
 
   /**
-   * Get agent statistics
+   * Get profile statistics
    */
-  static async getAgentStatistics(
+  static async getProfileStatistics(
     timeframe: TimeFrame,
     userId?: string,
-    isAgentAdmin?: boolean,
-  ): Promise<AgentStatistics[]> {
+    isProfileAdmin?: boolean,
+  ): Promise<ProfileStatistics[]> {
     const interval = StatisticsModel.getTimeframeInterval(timeframe);
     const timeBucket = StatisticsModel.getTimeBucket(timeframe);
     const { avgInputPrice, avgOutputPrice } =
       await StatisticsModel.getAverageTokenPrices();
 
-    // Get accessible agent IDs for users that are non-agent admins
-    let accessibleAgentIds: string[] = [];
-    if (userId && !isAgentAdmin) {
-      accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+    // Get accessible profile IDs for users that are non-profile admins
+    let accessibleProfileIds: string[] = [];
+    if (userId && !isProfileAdmin) {
+      accessibleProfileIds = await AgentTeamModel.getUserAccessibleAgentIds(
         userId,
         false,
       );
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return [];
       }
     }
 
     const query = db
       .select({
-        agentId: schema.agentsTable.id,
-        agentName: schema.agentsTable.name,
+        profileId: schema.agentsTable.id,
+        profileName: schema.agentsTable.name,
         teamName: schema.teamsTable.name,
         timeBucket: sql<string>`DATE_TRUNC(${sql.raw(`'${timeBucket}'`)}, ${schema.interactionsTable.createdAt})`,
         requests: sql<number>`CAST(COUNT(*) AS INTEGER)`,
@@ -487,8 +487,8 @@ class StatisticsModel {
             schema.interactionsTable.createdAt,
             sql`NOW() - INTERVAL ${sql.raw(`'${interval}'`)}`,
           ),
-          ...(accessibleAgentIds.length > 0
-            ? [inArray(schema.agentsTable.id, accessibleAgentIds)]
+          ...(accessibleProfileIds.length > 0
+            ? [inArray(schema.agentsTable.id, accessibleProfileIds)]
             : []),
         ),
       )
@@ -516,8 +516,8 @@ class StatisticsModel {
     if (timeframe === "1h") {
     }
 
-    // Aggregate data by agent
-    const agentMap = new Map<string, AgentStatistics>();
+    // Aggregate data by profile
+    const profileMap = new Map<string, ProfileStatistics>();
 
     for (const row of timeSeriesData) {
       const cost = StatisticsModel.calculateCost(
@@ -527,10 +527,10 @@ class StatisticsModel {
         avgOutputPrice,
       );
 
-      if (!agentMap.has(row.agentId)) {
-        agentMap.set(row.agentId, {
-          agentId: row.agentId,
-          agentName: row.agentName,
+      if (!profileMap.has(row.profileId)) {
+        profileMap.set(row.profileId, {
+          profileId: row.profileId,
+          profileName: row.profileName,
           teamName: row.teamName || "No Team",
           requests: 0,
           inputTokens: 0,
@@ -540,19 +540,19 @@ class StatisticsModel {
         });
       }
 
-      const agent = agentMap.get(row.agentId);
-      if (!agent) continue;
-      agent.requests += Number(row.requests);
-      agent.inputTokens += Number(row.inputTokens);
-      agent.outputTokens += Number(row.outputTokens);
-      agent.cost += cost;
-      agent.timeSeries.push({
+      const profile = profileMap.get(row.profileId);
+      if (!profile) continue;
+      profile.requests += Number(row.requests);
+      profile.inputTokens += Number(row.inputTokens);
+      profile.outputTokens += Number(row.outputTokens);
+      profile.cost += cost;
+      profile.timeSeries.push({
         timestamp: row.timeBucket,
         value: cost,
       });
     }
 
-    return Array.from(agentMap.values());
+    return Array.from(profileMap.values());
   }
 
   /**
@@ -561,22 +561,22 @@ class StatisticsModel {
   static async getModelStatistics(
     timeframe: TimeFrame,
     userId?: string,
-    isAgentAdmin?: boolean,
+    isProfileAdmin?: boolean,
   ): Promise<ModelStatistics[]> {
     const interval = StatisticsModel.getTimeframeInterval(timeframe);
     const timeBucket = StatisticsModel.getTimeBucket(timeframe);
     const { avgInputPrice, avgOutputPrice } =
       await StatisticsModel.getAverageTokenPrices();
 
-    // Get accessible agent IDs for users that are non-agent admins
-    let accessibleAgentIds: string[] = [];
-    if (userId && !isAgentAdmin) {
-      accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+    // Get accessible profile IDs for users that are non-profile admins
+    let accessibleProfileIds: string[] = [];
+    if (userId && !isProfileAdmin) {
+      accessibleProfileIds = await AgentTeamModel.getUserAccessibleAgentIds(
         userId,
         false,
       );
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return [];
       }
     }
@@ -600,8 +600,8 @@ class StatisticsModel {
             schema.interactionsTable.createdAt,
             sql`NOW() - INTERVAL ${sql.raw(`'${interval}'`)}`,
           ),
-          ...(accessibleAgentIds.length > 0
-            ? [inArray(schema.agentsTable.id, accessibleAgentIds)]
+          ...(accessibleProfileIds.length > 0
+            ? [inArray(schema.agentsTable.id, accessibleProfileIds)]
             : []),
         ),
       )
@@ -674,12 +674,12 @@ class StatisticsModel {
   static async getOverviewStatistics(
     timeframe: TimeFrame,
     userId?: string,
-    isAgentAdmin?: boolean,
+    isProfileAdmin?: boolean,
   ): Promise<OverviewStatistics> {
-    const [teamStats, agentStats, modelStats] = await Promise.all([
-      StatisticsModel.getTeamStatistics(timeframe, userId, isAgentAdmin),
-      StatisticsModel.getAgentStatistics(timeframe, userId, isAgentAdmin),
-      StatisticsModel.getModelStatistics(timeframe, userId, isAgentAdmin),
+    const [teamStats, profileStats, modelStats] = await Promise.all([
+      StatisticsModel.getTeamStatistics(timeframe, userId, isProfileAdmin),
+      StatisticsModel.getProfileStatistics(timeframe, userId, isProfileAdmin),
+      StatisticsModel.getModelStatistics(timeframe, userId, isProfileAdmin),
     ]);
 
     const totalRequests = teamStats.reduce(
@@ -697,10 +697,10 @@ class StatisticsModel {
         team.cost > (top?.cost || 0) ? team : top,
       )?.teamName || "";
 
-    const topAgent =
-      agentStats.reduce((top, agent) =>
-        agent.cost > (top?.cost || 0) ? agent : top,
-      )?.agentName || "";
+    const topProfile =
+      profileStats.reduce((top, profile) =>
+        profile.cost > (top?.cost || 0) ? profile : top,
+      )?.profileName || "";
 
     const topModel =
       modelStats.reduce((top, model) =>
@@ -712,7 +712,7 @@ class StatisticsModel {
       totalTokens,
       totalCost,
       topTeam,
-      topAgent,
+      topProfile,
       topModel,
     };
   }

@@ -45,10 +45,10 @@ class McpClient {
    */
   async executeToolCall(
     toolCall: CommonToolCall,
-    agentId: string,
+    profileId: string,
   ): Promise<CommonToolResult> {
     // Validate and get tool metadata
-    const validationResult = await this.validateAndGetTool(toolCall, agentId);
+    const validationResult = await this.validateAndGetTool(toolCall, profileId);
     if ("error" in validationResult) {
       return validationResult.error;
     }
@@ -58,7 +58,7 @@ class McpClient {
     const contextResult = await this.getExecutionContext(
       tool,
       toolCall,
-      agentId,
+      profileId,
     );
     if ("error" in contextResult) {
       return contextResult.error;
@@ -101,7 +101,7 @@ class McpClient {
       // Apply template and return
       return await this.createSuccessResult(
         toolCall,
-        agentId,
+        profileId,
         tool.mcpServerName || "unknown",
         result.content,
         !!result.isError,
@@ -110,7 +110,7 @@ class McpClient {
     } catch (error) {
       return await this.createErrorResult(
         toolCall,
-        agentId,
+        profileId,
         error instanceof Error ? error.message : "Unknown error",
         tool.mcpServerName || "unknown",
       );
@@ -156,7 +156,7 @@ class McpClient {
    */
   private async validateAndGetTool(
     toolCall: CommonToolCall,
-    agentId: string,
+    profileId: string,
   ): Promise<
     | { tool: McpToolWithServerMetadata; catalogItem: InternalMcpCatalog }
     | { error: CommonToolResult }
@@ -164,7 +164,7 @@ class McpClient {
     // Get MCP tool
     const mcpTools = await ToolModel.getMcpToolsAssignedToAgent(
       [toolCall.name],
-      agentId,
+      profileId,
     );
     const tool = mcpTools[0];
 
@@ -172,8 +172,8 @@ class McpClient {
       return {
         error: await this.createErrorResult(
           toolCall,
-          agentId,
-          "Tool not found or not assigned to agent",
+          profileId,
+          "Tool not found or not assigned to profile",
         ),
       };
     }
@@ -183,7 +183,7 @@ class McpClient {
       return {
         error: await this.createErrorResult(
           toolCall,
-          agentId,
+          profileId,
           "Tool is missing catalogId",
           tool.mcpServerName || "unknown",
         ),
@@ -196,7 +196,7 @@ class McpClient {
       return {
         error: await this.createErrorResult(
           toolCall,
-          agentId,
+          profileId,
           `No catalog item found for tool catalog ID ${tool.catalogId}`,
           tool.mcpServerName || "unknown",
         ),
@@ -212,7 +212,7 @@ class McpClient {
   private async getExecutionContext(
     tool: McpToolWithServerMetadata,
     toolCall: CommonToolCall,
-    agentId: string,
+    profileId: string,
   ): Promise<
     | { targetMcpServerId: string; secrets: Record<string, unknown> }
     | { error: CommonToolResult }
@@ -225,7 +225,7 @@ class McpClient {
       return {
         error: await this.createErrorResult(
           toolCall,
-          agentId,
+          profileId,
           "No execution source specified for MCP tool",
           tool.mcpServerName || "unknown",
         ),
@@ -353,7 +353,7 @@ class McpClient {
    */
   private async createErrorResult(
     toolCall: CommonToolCall,
-    agentId: string,
+    profileId: string,
     error: string,
     mcpServerName: string = "unknown",
   ): Promise<CommonToolResult> {
@@ -364,7 +364,7 @@ class McpClient {
       error,
     };
 
-    await this.persistToolCall(agentId, mcpServerName, toolCall, errorResult);
+    await this.persistToolCall(profileId, mcpServerName, toolCall, errorResult);
     return errorResult;
   }
 
@@ -373,7 +373,7 @@ class McpClient {
    */
   private async createSuccessResult(
     toolCall: CommonToolCall,
-    agentId: string,
+    profileId: string,
     mcpServerName: string,
     content: unknown,
     isError: boolean,
@@ -391,7 +391,7 @@ class McpClient {
       isError,
     };
 
-    await this.persistToolCall(agentId, mcpServerName, toolCall, toolResult);
+    await this.persistToolCall(profileId, mcpServerName, toolCall, toolResult);
     return toolResult;
   }
 
@@ -399,14 +399,14 @@ class McpClient {
    * Persist tool call to database with error handling
    */
   private async persistToolCall(
-    agentId: string,
+    profileId: string,
     mcpServerName: string,
     toolCall: CommonToolCall,
     toolResult: CommonToolResult,
   ): Promise<void> {
     try {
       const savedToolCall = await McpToolCallModel.create({
-        agentId,
+        agentId: profileId,
         mcpServerName,
         method: "tools/call",
         toolCall,

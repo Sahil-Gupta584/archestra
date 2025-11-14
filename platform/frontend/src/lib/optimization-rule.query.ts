@@ -25,15 +25,15 @@ export type UpdateOptimizationRuleInput = Partial<
 // Get all optimization rules for an agent
 export function useOptimizationRules(agentId: string | null) {
   return useQuery<OptimizationRule[]>({
-    queryKey: ["optimization-rules", agentId],
+    queryKey: ["optimization-rules", profileId],
     queryFn: async () => {
-      if (!agentId) return [];
+      if (!profileId) return [];
       const response = await getOptimizationRules({
-        path: { agentId },
+        path: { profileId },
       });
       return response.data ?? [];
     },
-    enabled: !!agentId,
+    enabled: !!profileId,
   });
 }
 
@@ -55,9 +55,9 @@ export function useCreateOptimizationRule() {
 
   return useMutation({
     mutationFn: async (data: CreateOptimizationRuleInput) => {
-      const { agentId, ...body } = data;
+      const { profileId, ...body } = data;
       const response = await createOptimizationRule({
-        path: { agentId },
+        path: { profileId },
         body,
       });
       return response.data;

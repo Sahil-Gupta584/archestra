@@ -1,6 +1,6 @@
 import { getArchestraMcpTools } from "@/archestra-mcp-server";
 import { describe, expect, test } from "@/test";
-import AgentToolModel from "./agent-tool";
+import AgentToolModel from "./profile-tool";
 import ToolModel from "./tool";
 
 describe("Archestra Tools Dynamic Assignment", () => {

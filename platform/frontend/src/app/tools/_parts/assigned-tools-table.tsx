@@ -38,7 +38,7 @@ import {
   useAgentToolPatchMutation,
   useAllAgentTools,
   useUnassignTool,
-} from "@/lib/agent-tools.query";
+} from "@/lib/profile-tools.query";
 import { useInternalMcpCatalog } from "@/lib/internal-mcp-catalog.query";
 import { useMcpServers } from "@/lib/mcp-server.query";
 import {
@@ -96,7 +96,7 @@ export function AssignedToolsTable({ onToolClick }: AssignedToolsTableProps) {
   const pageFromUrl = searchParams.get("page");
   const pageSizeFromUrl = searchParams.get("pageSize");
   const searchFromUrl = searchParams.get("search");
-  const agentIdFromUrl = searchParams.get("agentId");
+  const profileIdFromUrl = searchParams.get("profileId");
   const originFromUrl = searchParams.get("origin");
   const credentialFromUrl = searchParams.get("credential");
   const sortByFromUrl = searchParams.get("sortBy") as AgentToolsSortByValues;
@@ -109,7 +109,7 @@ export function AssignedToolsTable({ onToolClick }: AssignedToolsTableProps) {
 
   // State
   const [searchQuery, setSearchQuery] = useState(searchFromUrl || "");
-  const [agentFilter, setAgentFilter] = useState(agentIdFromUrl || "all");
+  const [profileFilter, setAgentFilter] = useState(agentIdFromUrl || "all");
   const [originFilter, setOriginFilter] = useState(originFromUrl || "all");
   const [credentialFilter, setCredentialFilter] = useState(
     credentialFromUrl || "all",
@@ -135,7 +135,7 @@ export function AssignedToolsTable({ onToolClick }: AssignedToolsTableProps) {
     },
     filters: {
       search: searchQuery || undefined,
-      agentId: agentFilter !== "all" ? agentFilter : undefined,
+      profileId: profileFilter !== "all" ? profileFilter : undefined,
       origin: originFilter !== "all" ? originFilter : undefined,
       credentialSourceMcpServerId:
         credentialFilter !== "all" ? credentialFilter : undefined,
@@ -204,7 +204,7 @@ export function AssignedToolsTable({ onToolClick }: AssignedToolsTableProps) {
     (value: string) => {
       setAgentFilter(value);
       updateUrlParams({
-        agentId: value === "all" ? null : value,
+        profileId: value === "all" ? null : value,
         page: "1", // Reset to first page
       });
       setRowSelection({});
@@ -336,7 +336,7 @@ export function AssignedToolsTable({ onToolClick }: AssignedToolsTableProps) {
         size: 130,
       },
       {
-        id: "agent",
+        id: "profile",
         accessorFn: (row) => row.agent?.name || "",
         header: ({ column }) => (
           <Button
@@ -648,7 +648,7 @@ export function AssignedToolsTable({ onToolClick }: AssignedToolsTableProps) {
           />
         </div>
 
-        <Select value={agentFilter} onValueChange={handleAgentFilterChange}>
+        <Select value={profileFilter} onValueChange={handleAgentFilterChange}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by Agent" />
           </SelectTrigger>
@@ -812,14 +812,14 @@ export function AssignedToolsTable({ onToolClick }: AssignedToolsTableProps) {
           <h3 className="mb-2 text-lg font-semibold">No tools found</h3>
           <p className="mb-4 text-sm text-muted-foreground">
             {searchQuery ||
-            agentFilter !== "all" ||
+            profileFilter !== "all" ||
             originFilter !== "all" ||
             credentialFilter !== "all"
               ? "No tools match your filters. Try adjusting your search or filters."
               : "No tools have been assigned yet."}
           </p>
           {(searchQuery ||
-            agentFilter !== "all" ||
+            profileFilter !== "all" ||
             originFilter !== "all" ||
             credentialFilter !== "all") && (
             <Button

@@ -10,18 +10,19 @@ import config from "@/lib/config";
 const { displayProxyUrl: apiBaseUrl } = config.api;
 
 interface McpConnectionInstructionsProps {
-  agentId: string;
+  profileId: string;
+
 }
 
 export function McpConnectionInstructions({
-  agentId,
+  profileId,
 }: McpConnectionInstructionsProps) {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedAuth, setCopiedAuth] = useState(false);
   const [copiedConfig, setCopiedConfig] = useState(false);
 
   const mcpUrl = `${apiBaseUrl}/mcp`;
-  const token = agentId;
+  const token = profileId;
 
   const mcpConfig = JSON.stringify(
     {

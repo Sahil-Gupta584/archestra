@@ -6,7 +6,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import agentsTable from "./agent";
+import profilesTable from "./profile";
 
 /**
  * Simple message format used in dual LLM Q&A conversation
@@ -25,16 +25,16 @@ const dualLlmResultsTable = pgTable(
   "dual_llm_results",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    agentId: uuid("agent_id")
+    profileId: uuid("profile_id")
       .notNull()
-      .references(() => agentsTable.id, { onDelete: "cascade" }),
+      .references(() => profilesTable.id, { onDelete: "cascade" }),
     toolCallId: text("tool_call_id").notNull(),
     conversations: jsonb("conversations").$type<DualLlmMessage[]>().notNull(),
     result: text("result").notNull(),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
-    agentIdIdx: index("dual_llm_results_agent_id_idx").on(table.agentId),
+    profileIdIdx: index("dual_llm_results_profile_id_idx").on(table.profileId),
   }),
 );
 

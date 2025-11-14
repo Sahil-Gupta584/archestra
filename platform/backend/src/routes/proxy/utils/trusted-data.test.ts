@@ -12,7 +12,7 @@ describe("trusted-data evaluation (provider-agnostic)", () => {
   beforeEach(async ({ makeAgent }) => {
     // Create test agent
     const agent = await makeAgent();
-    agentId = agent.id;
+    profileId = agent.id;
 
     // Create test tool
     await ToolModel.createToolIfNotExists({

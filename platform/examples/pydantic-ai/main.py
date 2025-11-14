@@ -14,8 +14,8 @@ import asyncio
 # Load environment variables from .env file
 load_dotenv()
 
-# Initial task for the agent
-AGENT_TASK = """You are a software engineering assistant. Please help me build the feature described in this GitHub issue:
+# Initial task for the profile
+PROFILE_TASK = """You are a software engineering assistant. Please help me build the feature described in this GitHub issue:
 
 https://github.com/archestra-ai/archestra/issues/669
 
@@ -68,8 +68,8 @@ def get_model(use_archestra: bool = False):
 
   return model
 
-async def run_agent(use_archestra: bool = False):
-  """Run the agent to completion with streaming progress."""
+async def run_profile(use_archestra: bool = False):
+  """Run the profile to completion with streaming progress."""
 
   agent = Agent(
     model=get_model(use_archestra),
@@ -133,15 +133,15 @@ async def run_agent(use_archestra: bool = False):
     return {'status': 'sent', 'to': to, 'subject': subject}
 
   print(f"\n{'='*60}")
-  print(f"Agent Task: {AGENT_TASK}")
+  print(f"Profile Task: {PROFILE_TASK}")
   print(f"{'='*60}\n")
 
-  print("[AGENT] Generating response...\n")
+  print("[PROFILE] Generating response...\n")
 
   # Use agent.iter() instead of run_stream to ensure tool calls execute
   # This is required for Anthropic models which may return text before tool calls
   # See: https://github.com/pydantic/pydantic-ai/issues/2521
-  async with agent.iter(AGENT_TASK) as run:
+  async with agent.iter(PROFILE_TASK) as run:
     async for node in run:
       if agent.is_model_request_node(node):
         async with node.stream(run.ctx) as request_stream:
@@ -150,7 +150,7 @@ async def run_agent(use_archestra: bool = False):
             print(text, end='', flush=True)
 
   print(f"\n\n{'='*60}")
-  print("[AGENT] Task completed!")
+  print("[PROFILE] Task completed!")
   print(f"{'='*60}\n")
 
 
@@ -158,7 +158,7 @@ def main():
   """Main entry point."""
   # Parse command line arguments
   parser = argparse.ArgumentParser(
-    description='Run an autonomous agent with optional Archestra security layer',
+    description='Run an autonomous profile with optional Archestra security layer',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog="""
 Examples:
@@ -178,7 +178,7 @@ Examples:
   print(f"{'='*60}")
 
   try:
-    asyncio.run(run_agent(use_archestra=args.secure))
+    asyncio.run(run_profile(use_archestra=args.secure))
   except KeyboardInterrupt:
     print("\n\nInterrupted by user.")
     sys.exit(0)

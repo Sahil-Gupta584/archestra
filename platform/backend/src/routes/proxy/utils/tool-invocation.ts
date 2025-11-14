@@ -1,7 +1,7 @@
 import { ToolInvocationPolicyModel } from "@/models";
 
 /**
- * This method will evaluate whether, based on the tool invocation policies assigned to the specified agent,
+ * This method will evaluate whether, based on the tool invocation policies assigned to the specified profile,
  * if the tool call is allowed or blocked.
  *
  * If this method returns non-null it is because the tool call was blocked and we are returning a refusal message
@@ -9,7 +9,7 @@ import { ToolInvocationPolicyModel } from "@/models";
  */
 export const evaluatePolicies = async (
   toolCalls: Array<{ toolCallName: string; toolCallArgs: string }>,
-  agentId: string,
+  profileId: string,
   contextIsTrusted: boolean,
 ): Promise<null | [string, string]> => {
   for (const toolCall of toolCalls) {
@@ -28,7 +28,7 @@ export const evaluatePolicies = async (
     const toolInput = JSON.parse(toolCallArgs);
 
     const { isAllowed, reason } = await ToolInvocationPolicyModel.evaluate(
-      agentId,
+      profileId,
       toolCallName,
       toolInput,
       contextIsTrusted,

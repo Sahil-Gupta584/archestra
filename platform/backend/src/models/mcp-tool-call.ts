@@ -10,7 +10,7 @@ import type {
   PaginationQuery,
   SortingQuery,
 } from "@/types";
-import AgentTeamModel from "./agent-team";
+import AgentTeamModel from "./profile-team";
 
 class McpToolCallModel {
   static async create(data: InsertMcpToolCall) {

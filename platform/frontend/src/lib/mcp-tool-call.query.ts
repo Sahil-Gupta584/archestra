@@ -7,14 +7,14 @@ import { DEFAULT_TABLE_LIMIT } from "./utils";
 const { getMcpToolCall, getMcpToolCalls } = archestraApiSdk;
 
 export function useMcpToolCalls({
-  agentId,
+  profileId,
   limit = DEFAULT_TABLE_LIMIT,
   offset = 0,
   sortBy,
   sortDirection = "desc",
   initialData,
 }: {
-  agentId?: string;
+  profileId?: string;
   limit?: number;
   offset?: number;
   sortBy?: NonNullable<
@@ -24,11 +24,11 @@ export function useMcpToolCalls({
   initialData?: archestraApiTypes.GetMcpToolCallsResponses["200"];
 } = {}) {
   return useSuspenseQuery({
-    queryKey: ["mcpToolCalls", agentId, limit, offset, sortBy, sortDirection],
+    queryKey: ["mcpToolCalls", profileId, limit, offset, sortBy, sortDirection],
     queryFn: async () => {
       const response = await getMcpToolCalls({
         query: {
-          ...(agentId ? { agentId } : {}),
+          ...(profileId ? { profileId } : {}),
           limit,
           offset,
           ...(sortBy ? { sortBy } : {}),

@@ -24,7 +24,7 @@ export const ExtendedSelectToolSchema = SelectToolSchema.omit({
   mcpServerId: true,
 }).extend({
   // Nullable for MCP tools
-  agent: z
+  profile: z
     .object({
       id: z.string(),
       name: z.string(),

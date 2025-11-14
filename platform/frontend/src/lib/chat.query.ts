@@ -47,9 +47,9 @@ export function useCreateConversation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (agentId: string) => {
+    mutationFn: async (profileId: string) => {
       const { data, error } = await createChatConversation({
-        body: { agentId },
+        body: { profileId },
       });
       if (error) throw new Error("Failed to create conversation");
       return data;
@@ -105,18 +105,18 @@ export function useDeleteConversation() {
   });
 }
 
-export function useChatAgentMcpTools(agentId: string | undefined) {
+export function useChatAgentMcpTools(profileId: string | undefined) {
   return useQuery({
-    queryKey: ["chat", "agents", agentId, "mcp-tools"],
+    queryKey: ["chat", "agents", profileId, "mcp-tools"],
     queryFn: async () => {
-      if (!agentId) return [];
+      if (!profileId) return [];
       const { data, error } = await getChatAgentMcpTools({
-        path: { agentId },
+        path: { profileId },
       });
       if (error) throw new Error("Failed to fetch MCP tools");
       return data;
     },
-    enabled: !!agentId,
+    enabled: !!profileId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000,
   });

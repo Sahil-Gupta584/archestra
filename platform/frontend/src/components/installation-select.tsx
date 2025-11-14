@@ -20,8 +20,8 @@ interface InstallationSelectProps {
   className?: string;
   /** Catalog ID to filter installations - only shows local installations for the same catalog item */
   catalogId: string;
-  /** Agent IDs to filter installations - only shows installations that can be used with the specified agents */
-  agentIds: string[];
+  /** Profile IDs to filter installations - only shows installations that can be used with the specified profiles */
+  profileIds: string[];
 }
 
 /**
@@ -29,8 +29,8 @@ interface InstallationSelectProps {
  * Shows local MCP server installations for a given catalog item with team-based filtering.
  *
  * Filtering logic:
- * - Personal installations: shown if user is owner AND shares team with agent
- * - Team installations: shown if any installation team matches agent teams
+ * - Personal installations: shown if user is owner AND shares team with profile
+ * - Team installations: shown if any installation team matches profile teams
  * - Admins: see all installations
  */
 export function InstallationSelect({
@@ -39,10 +39,10 @@ export function InstallationSelect({
   disabled,
   className,
   catalogId,
-  agentIds,
+  profileIds,
 }: InstallationSelectProps) {
   const { data: mcpServers, isLoading } = useAgentAvailableTokens({
-    agentIds: agentIds ?? null,
+    agentIds: profileIds ?? null,
     catalogId: catalogId ?? null,
   });
 

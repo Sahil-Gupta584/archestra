@@ -4,8 +4,8 @@ import { and, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { getArchestraMcpTools } from "@/archestra-mcp-server";
 import db, { schema } from "@/database";
 import type { ExtendedTool, InsertTool, Tool } from "@/types";
-import AgentTeamModel from "./agent-team";
-import AgentToolModel from "./agent-tool";
+import ProfileTeamModel from "./profile-team";
+import ProfileToolModel from "./profile-tool";
 
 class ToolModel {
   /**
@@ -142,9 +142,9 @@ class ToolModel {
       return null;
     }
 
-    // Check access control for non-agent admins
+    // Check access control for non-profile admins
     if (tool.agentId && userId && !isAgentAdmin) {
-      const hasAccess = await AgentTeamModel.userHasAgentAccess(
+      const hasAccess = await ProfileTeamModel.userHasProfileAccess(
         userId,
         tool.agentId,
         false,
@@ -193,25 +193,25 @@ class ToolModel {
       .$dynamic();
 
     /**
-     * Apply access control filtering for users that are not agent admins
+     * Apply access control filtering for users that are not profile admins
      *
-     * If the user is not an admin, we basically allow them to see all tools that are assigned to agents
-     * they have access to, plus all "MCP tools" (tools that are not assigned to any agent).
+     * If the user is not an admin, we basically allow them to see all tools that are assigned to profiles
+     * they have access to, plus all "MCP tools" (tools that are not assigned to any profile).
      */
     if (userId && !isAgentAdmin) {
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+      const accessibleProfileIds = await ProfileTeamModel.getUserAccessibleProfileIds(
         userId,
         false,
       );
 
       const mcpServerSourceClause = isNotNull(schema.toolsTable.mcpServerId);
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         query = query.where(mcpServerSourceClause);
       } else {
         query = query.where(
           or(
-            inArray(schema.toolsTable.agentId, accessibleAgentIds),
+            inArray(schema.toolsTable.agentId, accessibleProfileIds),
             mcpServerSourceClause,
           ),
         );
@@ -237,7 +237,7 @@ class ToolModel {
 
     // Check access control for non-admins
     if (tool.agentId && userId && !isAgentAdmin) {
-      const hasAccess = await AgentTeamModel.userHasAgentAccess(
+      const hasAccess = await ProfileTeamModel.userHasProfileAccess(
         userId,
         tool.agentId,
         false,
@@ -251,18 +251,18 @@ class ToolModel {
   }
 
   /**
-   * Get all tools for an agent (both proxy-sniffed and MCP tools)
+   * Get all tools for a profile (both proxy-sniffed and MCP tools)
    * Proxy-sniffed tools are those with agentId set directly
    * MCP tools are those assigned via the agent_tools junction table
    */
-  static async getToolsByAgent(agentId: string): Promise<Tool[]> {
+  static async getToolsByProfile(profileId: string): Promise<Tool[]> {
     // Get tool IDs assigned via junction table (MCP tools)
-    const assignedToolIds = await AgentToolModel.findToolIdsByAgent(agentId);
+    const assignedToolIds = await ProfileToolModel.findToolIdsByProfile(profileId);
 
     // Query for tools that are either:
-    // 1. Directly associated with the agent (proxy-sniffed, agentId set)
+    // 1. Directly associated with the profile (proxy-sniffed, agentId set)
     // 2. Assigned via junction table (MCP tools, agentId is null)
-    const conditions = [eq(schema.toolsTable.agentId, agentId)];
+    const conditions = [eq(schema.toolsTable.agentId, profileId)];
 
     if (assignedToolIds.length > 0) {
       conditions.push(inArray(schema.toolsTable.id, assignedToolIds));
@@ -278,19 +278,19 @@ class ToolModel {
   }
 
   /**
-   * Get only MCP tools assigned to an agent (those from connected MCP servers)
+   * Get only MCP tools assigned to a profile (those from connected MCP servers)
    * Includes: MCP server tools (catalogId set) and Archestra built-in tools (both null)
    * Excludes: proxy-discovered tools (agentId set, catalogId null)
    *
-   * Automatically assigns Archestra built-in tools to the agent if not already assigned.
+   * Automatically assigns Archestra built-in tools to the profile if not already assigned.
    */
-  static async getMcpToolsByAgent(agentId: string): Promise<Tool[]> {
-    // Ensure Archestra built-in tools are assigned to this agent
-    // This auto-migrates existing agents that were created before auto-assignment was added
-    await ToolModel.assignArchestraToolsToAgent(agentId);
+  static async getMcpToolsByProfile(profileId: string): Promise<Tool[]> {
+    // Ensure Archestra built-in tools are assigned to this profile
+    // This auto-migrates existing profiles that were created before auto-assignment was added
+    await ToolModel.assignArchestraToolsToProfile(profileId);
 
     // Get tool IDs assigned via junction table (MCP tools)
-    const assignedToolIds = await AgentToolModel.findToolIdsByAgent(agentId);
+    const assignedToolIds = await ProfileToolModel.findToolIdsByProfile(profileId);
 
     if (assignedToolIds.length === 0) {
       return [];
@@ -321,10 +321,10 @@ class ToolModel {
   }
 
   /**
-   * Assign Archestra built-in tools to an agent
+   * Assign Archestra built-in tools to a profile
    * Creates the tools globally if they don't exist, then assigns them via junction table
    */
-  static async assignArchestraToolsToAgent(agentId: string): Promise<void> {
+  static async assignArchestraToolsToProfile(profileId: string): Promise<void> {
     const archestraTools = getArchestraMcpTools();
 
     for (const archestraTool of archestraTools) {
@@ -337,16 +337,16 @@ class ToolModel {
         agentId: null,
       });
 
-      // Assign tool to agent via junction table
-      await AgentToolModel.createIfNotExists(agentId, tool.id);
+      // Assign tool to profile via junction table
+      await ProfileToolModel.createIfNotExists(profileId, tool.id);
     }
   }
 
   /**
-   * Get names of all MCP tools assigned to an agent
+   * Get names of all MCP tools assigned to a profile
    * Used to prevent autodiscovery of tools already available via MCP servers
    */
-  static async getMcpToolNamesByAgent(agentId: string): Promise<string[]> {
+  static async getMcpToolNamesByProfile(profileId: string): Promise<string[]> {
     const mcpTools = await db
       .select({
         name: schema.toolsTable.name,

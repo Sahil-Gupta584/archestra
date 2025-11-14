@@ -53,7 +53,7 @@ describe("McpClient", () => {
   beforeEach(async () => {
     // Create test agent
     const agent = await AgentModel.create({ name: "Test Agent", teams: [] });
-    agentId = agent.id;
+    profileId = agent.id;
 
     // Create secret with access token
     const secret = await SecretModel.create({
@@ -97,7 +97,7 @@ describe("McpClient", () => {
         arguments: { param: "value" },
       };
 
-      const result = await mcpClient.executeToolCall(toolCall, agentId);
+      const result = await mcpClient.executeToolCall(toolCall, profileId);
       expect(result).toMatchObject({
         id: "call_123",
         isError: true,
@@ -117,7 +117,7 @@ describe("McpClient", () => {
         });
 
         // Assign tool to agent with response modifier
-        await AgentToolModel.create(agentId, tool.id, {
+        await AgentToolModel.create(profileId, tool.id, {
           responseModifierTemplate:
             'Modified: {{{lookup (lookup response 0) "text"}}}',
         });
@@ -139,7 +139,7 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         expect(result).toEqual({
           id: "call_1",
@@ -163,7 +163,7 @@ describe("McpClient", () => {
           mcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool.id, {
+        await AgentToolModel.create(profileId, tool.id, {
           responseModifierTemplate:
             '{{#with (lookup response 0)}}{"formatted": true, "data": "{{{this.text}}}"}{{/with}}',
         });
@@ -179,7 +179,7 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         expect(result).toEqual({
           id: "call_1",
@@ -197,7 +197,7 @@ describe("McpClient", () => {
           mcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool.id, {
+        await AgentToolModel.create(profileId, tool.id, {
           responseModifierTemplate: `{{#with (lookup response 0)}}{{#with (json this.text)}}
   {
   {{#each this.issues}}
@@ -224,7 +224,7 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         expect(result).toEqual({
           id: "call_1",
@@ -245,7 +245,7 @@ describe("McpClient", () => {
           mcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool.id, {
+        await AgentToolModel.create(profileId, tool.id, {
           responseModifierTemplate: "{{{json response}}}",
         });
 
@@ -263,7 +263,7 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         expect(result?.content).toEqual([
           { type: "text", text: "Line 1" },
@@ -281,7 +281,7 @@ describe("McpClient", () => {
         });
 
         // Invalid Handlebars template
-        await AgentToolModel.create(agentId, tool.id, {
+        await AgentToolModel.create(profileId, tool.id, {
           responseModifierTemplate: "{{#invalid",
         });
 
@@ -297,7 +297,7 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         // Should fall back to original content when template fails
 
@@ -317,7 +317,7 @@ describe("McpClient", () => {
           mcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool.id, {
+        await AgentToolModel.create(profileId, tool.id, {
           responseModifierTemplate:
             'Type: {{lookup (lookup response 0) "type"}}',
         });
@@ -334,7 +334,7 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         expect(result?.content).toEqual([
           { type: "text", text: "Type: image" },
@@ -351,7 +351,7 @@ describe("McpClient", () => {
         });
 
         // Assign tool without response modifier template
-        await AgentToolModel.create(agentId, tool.id, {
+        await AgentToolModel.create(profileId, tool.id, {
           responseModifierTemplate: null,
         });
 
@@ -367,7 +367,7 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         expect(result).toEqual({
           id: "call_1",
@@ -394,12 +394,12 @@ describe("McpClient", () => {
           mcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool1.id, {
+        await AgentToolModel.create(profileId, tool1.id, {
           responseModifierTemplate:
             'Template 1: {{lookup (lookup response 0) "text"}}',
         });
 
-        await AgentToolModel.create(agentId, tool2.id, {
+        await AgentToolModel.create(profileId, tool2.id, {
           responseModifierTemplate:
             'Template 2: {{lookup (lookup response 0) "text"}}',
         });
@@ -426,8 +426,8 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result1 = await mcpClient.executeToolCall(toolCall1, agentId);
-        const result2 = await mcpClient.executeToolCall(toolCall2, agentId);
+        const result1 = await mcpClient.executeToolCall(toolCall1, profileId);
+        const result2 = await mcpClient.executeToolCall(toolCall2, profileId);
 
         expect(result1).toEqual({
           id: "call_1",
@@ -499,7 +499,7 @@ describe("McpClient", () => {
           mcpServerId: localMcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool.id);
+        await AgentToolModel.create(profileId, tool.id);
 
         // Mock runtime manager responses
         mockUsesStreamableHttp.mockResolvedValue(true);
@@ -517,7 +517,7 @@ describe("McpClient", () => {
           arguments: { input: "test" },
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         // Verify HTTP transport was detected
         expect(mockUsesStreamableHttp).toHaveBeenCalledWith(localMcpServerId);
@@ -548,7 +548,7 @@ describe("McpClient", () => {
           mcpServerId: localMcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool.id);
+        await AgentToolModel.create(profileId, tool.id);
 
         // Mock runtime manager responses - no endpoint URL
         mockUsesStreamableHttp.mockResolvedValue(true);
@@ -560,7 +560,7 @@ describe("McpClient", () => {
           arguments: { input: "test" },
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         // Verify error result
 
@@ -582,7 +582,7 @@ describe("McpClient", () => {
           mcpServerId: localMcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool.id, {
+        await AgentToolModel.create(profileId, tool.id, {
           responseModifierTemplate:
             'Result: {{{lookup (lookup response 0) "text"}}}',
         });
@@ -603,7 +603,7 @@ describe("McpClient", () => {
           arguments: {},
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         // Verify template was applied
 
@@ -624,7 +624,7 @@ describe("McpClient", () => {
           mcpServerId: localMcpServerId,
         });
 
-        await AgentToolModel.create(agentId, tool.id);
+        await AgentToolModel.create(profileId, tool.id);
 
         // Mock runtime manager to indicate stdio transport (not HTTP)
         mockUsesStreamableHttp.mockResolvedValue(false);
@@ -649,7 +649,7 @@ describe("McpClient", () => {
           arguments: { input: "test" },
         };
 
-        const result = await mcpClient.executeToolCall(toolCall, agentId);
+        const result = await mcpClient.executeToolCall(toolCall, profileId);
 
         // Verify K8s attach transport was used (not HTTP transport)
         expect(mockUsesStreamableHttp).toHaveBeenCalledWith(localMcpServerId);

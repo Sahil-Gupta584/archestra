@@ -61,8 +61,8 @@ const getNavigationItems = (isAuthenticated: boolean): MenuItem[] => {
       customIsActive: (pathname: string) => pathname.startsWith("/chat"),
     },
     {
-      title: "Agents",
-      url: "/agents",
+      title: "Profiles",
+      url: "/profiles",
       icon: Bot,
     },
     {

@@ -12,7 +12,7 @@ interface TokenPriceData {
 
 interface LimitData {
   id?: string;
-  entityType: "agent" | "organization" | "team";
+  entityType: "profile" | "organization" | "team";
   entityId: string;
   limitType: "tool_calls" | "token_cost" | "mcp_server_calls";
   limitValue: number;
@@ -445,7 +445,7 @@ function LimitInlineForm({
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    entityType: value as "agent" | "organization" | "team",
+                    entityType: value as "profile" | "organization" | "team",
                     entityId: "",
                   })
                 }
@@ -806,7 +806,7 @@ export default function CostPage() {
     null,
   );
   const [isAddingTokenPrice, setIsAddingTokenPrice] = useState(false);
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   // Data fetching hooks
   const { data: limits = [], isLoading: limitsLoading } = useLimits();
@@ -818,14 +818,14 @@ export default function CostPage() {
   const { data: agents = [] } = useAgents();
   const { data: defaultAgent } = useDefaultAgent();
   const { data: optimizationRules = [], isLoading: optimizationRulesLoading } =
-    useOptimizationRules(selectedAgentId);
+    useOptimizationRules(selectedProfileId);
 
-  // Set default agent as selected when it loads
+  // Set default profile as selected when it loads
   useEffect(() => {
-    if (defaultAgent && !selectedAgentId) {
-      setSelectedAgentId(defaultAgent.id);
+    if (defaultAgent && !selectedProfileId) {
+      setSelectedProfileId(defaultAgent.id);
     }
-  }, [defaultAgent, selectedAgentId]);
+  }, [defaultAgent, selectedProfileId]);
 
   // Statistics data fetching hooks
   const currentTimeframe = timeframe.startsWith("custom:")
@@ -834,7 +834,7 @@ export default function CostPage() {
   const { data: teamStatistics = [] } = useTeamStatistics({
     timeframe: currentTimeframe,
   });
-  const { data: agentStatistics = [] } = useAgentStatistics({
+  const { data: profileStatistics = [] } = useAgentStatistics({
     timeframe: currentTimeframe,
   });
   const { data: modelStatistics = [] } = useModelStatistics({
@@ -1136,11 +1136,11 @@ export default function CostPage() {
   const convertStatsToChartData = (
     statistics: Array<{
       teamName?: string;
-      agentName?: string;
+      profileName?: string;
       model?: string;
       timeSeries: Array<{ timestamp: string; value: number }>;
     }>,
-    labelKey: "teamName" | "agentName" | "model",
+    labelKey: "teamName" | "profileName" | "model",
     colors: string[],
   ) => {
     // Get unique time points across all datasets
@@ -1221,15 +1221,15 @@ export default function CostPage() {
           ],
         };
 
-  // Agent chart data
-  const agentChartData =
-    agentStatistics.length > 0
-      ? convertStatsToChartData(agentStatistics, "agentName", colors)
+  // Profile chart data
+  const profileChartData =
+    profileStatistics.length > 0
+      ? convertStatsToChartData(profileStatistics, "profileName", colors)
       : {
           labels: ["No Data"],
           datasets: [
             {
-              label: "No agents found",
+              label: "No profiles found",
               data: [0],
               borderColor: "#9ca3af",
               backgroundColor: "rgba(156, 163, 175, 0.1)",
@@ -1364,7 +1364,7 @@ export default function CostPage() {
             Cost & Limits
           </h1>
           <p className="text-sm text-muted-foreground">
-            Monitor and manage your AI model usage costs across all agents and
+            Monitor and manage your AI model usage costs across all profiles and
             teams.
           </p>
         </div>
@@ -1548,7 +1548,7 @@ export default function CostPage() {
                         <TableRow>
                           <TableHead>Team Name</TableHead>
                           <TableHead>Members</TableHead>
-                          <TableHead>Agents</TableHead>
+                          <TableHead>Profiles</TableHead>
                           <TableHead>Requests</TableHead>
                           <TableHead>Tokens</TableHead>
                           <TableHead className="text-right">Cost</TableHead>
@@ -1571,7 +1571,7 @@ export default function CostPage() {
                                 {team.teamName}
                               </TableCell>
                               <TableCell>{team.members}</TableCell>
-                              <TableCell>{team.agents}</TableCell>
+                              <TableCell>{team.profiles}</TableCell>
                               <TableCell>
                                 {team.requests.toLocaleString()}
                               </TableCell>
@@ -1595,14 +1595,14 @@ export default function CostPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Agents</CardTitle>
+                <CardTitle>Profiles</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Chart on the left */}
                   <div className="order-2 lg:order-1">
                     <div className="h-80">
-                      <Line data={agentChartData} options={chartOptions} />
+                      <Line data={profileChartData} options={chartOptions} />
                     </div>
                   </div>
 
@@ -1611,7 +1611,7 @@ export default function CostPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Agent Name</TableHead>
+                          <TableHead>Profile Name</TableHead>
                           <TableHead>Team</TableHead>
                           <TableHead>Requests</TableHead>
                           <TableHead>Tokens</TableHead>
@@ -1619,32 +1619,32 @@ export default function CostPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {agentStatistics.length === 0 ? (
+                        {profileStatistics.length === 0 ? (
                           <TableRow>
                             <TableCell
                               colSpan={5}
                               className="text-center py-8 text-muted-foreground"
                             >
-                              No agent data available for the selected timeframe
+                              No profile data available for the selected timeframe
                             </TableCell>
                           </TableRow>
                         ) : (
-                          agentStatistics.map((agent) => (
-                            <TableRow key={agent.agentId}>
+                          profileStatistics.map((profile) => (
+                            <TableRow key={profile.profileId}>
                               <TableCell className="font-medium">
-                                {agent.agentName}
+                                {profile.profileName}
                               </TableCell>
-                              <TableCell>{agent.teamName}</TableCell>
+                              <TableCell>{profile.teamName}</TableCell>
                               <TableCell>
-                                {agent.requests.toLocaleString()}
+                                {profile.requests.toLocaleString()}
                               </TableCell>
                               <TableCell>
                                 {(
-                                  agent.inputTokens + agent.outputTokens
+                                  profile.inputTokens + profile.outputTokens
                                 ).toLocaleString()}
                               </TableCell>
                               <TableCell className="text-right">
-                                ${agent.cost.toFixed(2)}
+                                ${profile.cost.toFixed(2)}
                               </TableCell>
                             </TableRow>
                           ))
@@ -2025,8 +2025,8 @@ export default function CostPage() {
           </TabsContent>
 
           <OptimizationRulesTab
-            selectedAgentId={selectedAgentId}
-            setSelectedAgentId={setSelectedAgentId}
+            selectedAgentId={selectedProfileId}
+            setSelectedAgentId={setSelectedProfileId}
             agents={agents}
             optimizationRules={optimizationRules}
             optimizationRulesLoading={optimizationRulesLoading}

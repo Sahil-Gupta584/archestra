@@ -19,7 +19,7 @@ import type { CommonDualLlmParams, SupportedProviders } from "./types";
  */
 export class DualLlmSubagent {
   config: DualLlmConfig; // Configuration loaded from database
-  agentId: string; // The agent ID for tracking
+  profileId: string; // The profile ID for tracking
   toolCallId: string; // The tool call ID for tracking
   llmClient: DualLlmClient; // LLM client instance
   originalUserRequest: string; // Extracted user request
@@ -27,14 +27,14 @@ export class DualLlmSubagent {
 
   private constructor(
     config: DualLlmConfig,
-    agentId: string,
+    profileId: string,
     toolCallId: string,
     llmClient: DualLlmClient,
     originalUserRequest: string,
     toolResult: unknown,
   ) {
     this.config = config;
-    this.agentId = agentId;
+    this.profileId = profileId;
     this.toolCallId = toolCallId;
     this.llmClient = llmClient;
     this.originalUserRequest = originalUserRequest;
@@ -43,13 +43,13 @@ export class DualLlmSubagent {
 
   static async create(
     params: CommonDualLlmParams,
-    agentId: string,
+    profileId: string,
     apiKey: string,
     provider: SupportedProviders,
   ): Promise<DualLlmSubagent> {
     return new DualLlmSubagent(
       await DualLlmConfigModel.getDefault(),
-      agentId,
+      profileId,
       params.toolCallId,
       createDualLlmClient(provider, apiKey),
       params.userRequest,
@@ -158,7 +158,7 @@ export class DualLlmSubagent {
 
     // Store the result in the database
     await DualLlmResultModel.create({
-      agentId: this.agentId,
+      agentId: this.profileId,
       toolCallId: this.toolCallId,
       conversations: conversation,
       result: summary,

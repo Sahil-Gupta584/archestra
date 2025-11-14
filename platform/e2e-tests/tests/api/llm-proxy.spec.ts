@@ -3,29 +3,29 @@ import { expect, test } from "./fixtures";
 test.describe("LLM Proxy - OpenAI", () => {
   const OPENAI_TEST_CASE_1_HEADER = "Bearer test-case-1-openai-tool-call";
 
-  let agentId: string;
+  let profileId: string;
   let trustedDataPolicyId: string;
   let toolInvocationPolicyId: string;
   let toolId: string;
 
   test("blocks tool invocation when untrusted data is consumed", async ({
     request,
-    createAgent,
+    createProfile,
     createTrustedDataPolicy,
     createToolInvocationPolicy,
     makeApiRequest,
   }) => {
-    // 1. Create a test agent
-    const createResponse = await createAgent(request, "OpenAI Test Agent");
-    const agent = await createResponse.json();
-    agentId = agent.id;
+    // 1. Create a test profile
+    const createResponse = await createProfile(request, "OpenAI Test Profile");
+    const profile = await createResponse.json();
+    profileId = profile.id;
 
     // 2. Send initial request to register the tool and get the toolId
     // First, let's make a request to create the tool
     const initialResponse = await makeApiRequest({
       request,
       method: "post",
-      urlSuffix: `/v1/openai/${agentId}/chat/completions`,
+      urlSuffix: `/v1/openai/${profileId}/chat/completions`,
       data: {
         model: "gpt-4",
         messages: [
@@ -67,24 +67,24 @@ test.describe("LLM Proxy - OpenAI", () => {
       );
     }
 
-    // Get the agent-tool relationship ID from the backend
-    const agentToolsResponse = await makeApiRequest({
+    // Get the profile-tool relationship ID from the backend
+    const profileToolsResponse = await makeApiRequest({
       request,
       method: "get",
-      urlSuffix: "/api/agent-tools",
+      urlSuffix: "/api/profile-tools",
     });
-    expect(agentToolsResponse.ok()).toBeTruthy();
-    const agentTools = await agentToolsResponse.json();
-    const readFileAgentTool = agentTools.data.find(
-      (at: { agent: { id: string }; tool: { name: string } }) =>
-        at.agent.id === agentId && at.tool.name === "read_file",
+    expect(profileToolsResponse.ok()).toBeTruthy();
+    const profileTools = await profileToolsResponse.json();
+    const readFileProfileTool = profileTools.data.find(
+      (pt: { profile: { id: string }; tool: { name: string } }) =>
+        pt.profile.id === profileId && pt.tool.name === "read_file",
     );
-    expect(readFileAgentTool).toBeDefined();
-    toolId = readFileAgentTool.id;
+    expect(readFileProfileTool).toBeDefined();
+    toolId = readFileProfileTool.id;
 
     // 3. Create a trusted data policy that marks messages with "untrusted" in content as untrusted
     const trustedDataPolicyResponse = await createTrustedDataPolicy(request, {
-      agentToolId: toolId,
+      profileToolId: toolId,
       description: "Mark messages containing UNTRUSTED_DATA as untrusted",
       attributePath: "$.content",
       operator: "contains",
@@ -98,7 +98,7 @@ test.describe("LLM Proxy - OpenAI", () => {
     const toolInvocationPolicyResponse = await createToolInvocationPolicy(
       request,
       {
-        agentToolId: toolId,
+        profileToolId: toolId,
         argumentPath: "file_path",
         operator: "contains",
         value: "/etc/",
@@ -113,7 +113,7 @@ test.describe("LLM Proxy - OpenAI", () => {
     const response = await makeApiRequest({
       request,
       method: "post",
-      urlSuffix: `/v1/openai/${agentId}/chat/completions`,
+      urlSuffix: `/v1/openai/${profileId}/chat/completions`,
       headers: {
         Authorization: OPENAI_TEST_CASE_1_HEADER,
         "Content-Type": "application/json",
@@ -176,7 +176,7 @@ test.describe("LLM Proxy - OpenAI", () => {
     const interactionsResponse = await makeApiRequest({
       request,
       method: "get",
-      urlSuffix: `/api/interactions?agentId=${agentId}`,
+      urlSuffix: `/api/interactions?profileId=${profileId}`,
     });
     expect(interactionsResponse.ok()).toBeTruthy();
     const interactionsData = await interactionsResponse.json();
@@ -198,7 +198,7 @@ test.describe("LLM Proxy - OpenAI", () => {
       request,
       deleteToolInvocationPolicy,
       deleteTrustedDataPolicy,
-      deleteAgent,
+      deleteProfile,
     }) => {
       // Clean up: delete the created resources
       if (toolInvocationPolicyId) {
@@ -207,8 +207,8 @@ test.describe("LLM Proxy - OpenAI", () => {
       if (trustedDataPolicyId) {
         await deleteTrustedDataPolicy(request, trustedDataPolicyId);
       }
-      if (agentId) {
-        await deleteAgent(request, agentId);
+      if (profileId) {
+        await deleteProfile(request, profileId);
       }
     },
   );
@@ -217,7 +217,7 @@ test.describe("LLM Proxy - OpenAI", () => {
 test.describe("LLM Proxy - Anthropic", () => {
   const ANTHROPIC_TEST_CASE_1_HEADER = "test-case-1-anthropic-tool-call";
 
-  let agentId: string;
+  let profileId: string;
   let trustedDataPolicyId: string;
   let toolInvocationPolicyId: string;
   let toolId: string;
@@ -229,16 +229,16 @@ test.describe("LLM Proxy - Anthropic", () => {
     createToolInvocationPolicy,
     makeApiRequest,
   }) => {
-    // 1. Create a test agent
-    const createResponse = await createAgent(request, "Anthropic Test Agent");
-    const agent = await createResponse.json();
-    agentId = agent.id;
+    // 1. Create a test profile
+    const createResponse = await createProfile(request, "Anthropic Test Profile");
+    const profile = await createResponse.json();
+    profileId = profile.id;
 
     // 2. Send initial request to register the tool and get the toolId
     const initialResponse = await makeApiRequest({
       request,
       method: "post",
-      urlSuffix: `/v1/anthropic/${agentId}/v1/messages`,
+      urlSuffix: `/v1/anthropic/${profileId}/v1/messages`,
       headers: {
         "x-api-key": ANTHROPIC_TEST_CASE_1_HEADER,
         "Content-Type": "application/json",
@@ -279,24 +279,24 @@ test.describe("LLM Proxy - Anthropic", () => {
       );
     }
 
-    // Get the agent-tool relationship ID from the backend
-    const agentToolsResponse = await makeApiRequest({
+    // Get the profile-tool relationship ID from the backend
+    const profileToolsResponse = await makeApiRequest({
       request,
       method: "get",
-      urlSuffix: "/api/agent-tools",
+      urlSuffix: "/api/profile-tools",
     });
-    expect(agentToolsResponse.ok()).toBeTruthy();
-    const agentTools = await agentToolsResponse.json();
-    const readFileAgentTool = agentTools.data.find(
+    expect(profileToolsResponse.ok()).toBeTruthy();
+    const profileTools = await profileToolsResponse.json();
+    const readFileProfileTool = profileTools.data.find(
       // biome-ignore lint/suspicious/noExplicitAny: for a test it's okay..
-      (at: any) => at.agent.id === agentId && at.tool.name === "read_file",
+      (pt: any) => pt.profile.id === profileId && pt.tool.name === "read_file",
     );
-    expect(readFileAgentTool).toBeDefined();
-    toolId = readFileAgentTool.id;
+    expect(readFileProfileTool).toBeDefined();
+    toolId = readFileProfileTool.id;
 
     // 3. Create a trusted data policy that marks messages with "UNTRUSTED_DATA" in content as untrusted
     const trustedDataPolicyResponse = await createTrustedDataPolicy(request, {
-      agentToolId: toolId,
+      profileToolId: toolId,
       description: "Mark messages containing UNTRUSTED_DATA as untrusted",
       attributePath: "$.content",
       operator: "contains",
@@ -310,7 +310,7 @@ test.describe("LLM Proxy - Anthropic", () => {
     const toolInvocationPolicyResponse = await createToolInvocationPolicy(
       request,
       {
-        agentToolId: toolId,
+        profileToolId: toolId,
         argumentPath: "file_path",
         operator: "contains",
         value: "/etc/",
@@ -325,7 +325,7 @@ test.describe("LLM Proxy - Anthropic", () => {
     const response = await makeApiRequest({
       request,
       method: "post",
-      urlSuffix: `/v1/anthropic/${agentId}/v1/messages`,
+      urlSuffix: `/v1/anthropic/${profileId}/v1/messages`,
       headers: {
         "x-api-key": ANTHROPIC_TEST_CASE_1_HEADER,
         "Content-Type": "application/json",
@@ -387,7 +387,7 @@ test.describe("LLM Proxy - Anthropic", () => {
     const interactionsResponse = await makeApiRequest({
       request,
       method: "get",
-      urlSuffix: `/api/interactions?agentId=${agentId}`,
+      urlSuffix: `/api/interactions?profileId=${profileId}`,
     });
     expect(interactionsResponse.ok()).toBeTruthy();
     const interactionsData = await interactionsResponse.json();
@@ -409,7 +409,7 @@ test.describe("LLM Proxy - Anthropic", () => {
       request,
       deleteToolInvocationPolicy,
       deleteTrustedDataPolicy,
-      deleteAgent,
+      deleteProfile,
     }) => {
       // Clean up: delete the created resources
       if (toolInvocationPolicyId) {
@@ -418,8 +418,8 @@ test.describe("LLM Proxy - Anthropic", () => {
       if (trustedDataPolicyId) {
         await deleteTrustedDataPolicy(request, trustedDataPolicyId);
       }
-      if (agentId) {
-        await deleteAgent(request, agentId);
+      if (profileId) {
+        await deleteProfile(request, profileId);
       }
     },
   );

@@ -12,7 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { AssignAgentDialog } from "@/app/tools/_parts/assign-agent-dialog";
+import { AssignAgentDialog } from "@/app/tools/_parts/assign-profile-dialog";
 import { LoadingSpinner } from "@/components/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ import {
   useRevokeAllTeamsMcpServerAccess,
   useRevokeUserMcpServerAccess,
 } from "@/lib/mcp-server.query";
-import { BulkAssignAgentDialog } from "./bulk-assign-agent-dialog";
+import { BulkAssignAgentDialog } from "./bulk-assign-profile-dialog";
 import { ManageLocalInstallationsDialog } from "./manage-local-installations-dialog";
 import { ManageTeamsDialog } from "./manage-teams-dialog";
 import { ManageUsersDialog } from "./manage-users-dialog";

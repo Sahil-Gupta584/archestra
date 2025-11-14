@@ -1,0 +1,290 @@
+"use client";
+
+import type { archestraApiTypes } from "@shared";
+import { Search } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { InstallationSelect } from "@/components/installation-select";
+import { TokenSelect } from "@/components/token-select";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useProfiles } from "@/lib/agent.query";
+import { useAssignTool } from "@/lib/profile-tools.query";
+import { useInternalMcpCatalog } from "@/lib/internal-mcp-catalog.query";
+
+interface AssignProfileDialogProps {
+  tool:
+    | archestraApiTypes.GetAllAgentToolsResponses["200"]["data"][number]
+    | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function AssignProfileDialog({
+  tool,
+  open,
+  onOpenChange,
+}: AssignProfileDialogProps) {
+  const { data: profiles } = useProfiles({});
+  const assignMutation = useAssignTool();
+  const { data: mcpCatalog } = useInternalMcpCatalog();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProfileIds, setSelectedProfileIds] = useState<string[]>([]);
+  const [credentialSourceMcpServerId, setCredentialSourceMcpServerId] =
+    useState<string | null>(null);
+  const [executionSourceMcpServerId, setExecutionSourceMcpServerId] = useState<
+    string | null
+  >(null);
+
+  // Determine if tool is from local server
+  const mcpCatalogItem = useMemo(() => {
+    if (!tool?.tool.catalogId) return null;
+    return mcpCatalog?.find((item) => item.id === tool.tool.catalogId);
+  }, [tool?.tool.catalogId, mcpCatalog]);
+
+  const catalogId = tool?.tool.catalogId ?? "";
+  const isLocalServer = mcpCatalogItem?.serverType === "local";
+
+  const filteredProfiles = useMemo(() => {
+    if (!profiles || !searchQuery.trim()) return profiles;
+
+    const query = searchQuery.toLowerCase();
+    return profiles.filter((profile) => profile.name.toLowerCase().includes(query));
+  }, [profiles, searchQuery]);
+
+  const handleAssign = useCallback(async () => {
+    if (!tool || selectedProfileIds.length === 0) return;
+
+    // Helper function to check if an error is a duplicate key error
+    const isDuplicateError = (error: unknown): boolean => {
+      if (!error) return false;
+      const errorStr = JSON.stringify(error).toLowerCase();
+      return (
+        errorStr.includes("duplicate key") ||
+        errorStr.includes("agent_tools_agent_id_tool_id_unique") ||
+        errorStr.includes("already assigned")
+      );
+    };
+
+    const results = await Promise.allSettled(
+      selectedProfileIds.map((profileId) =>
+        assignMutation.mutateAsync({
+          profileId: profileId,
+          toolId: tool.tool.id,
+          credentialSourceMcpServerId: isLocalServer
+            ? null
+            : credentialSourceMcpServerId || null,
+          executionSourceMcpServerId: isLocalServer
+            ? executionSourceMcpServerId || null
+            : null,
+        }),
+      ),
+    );
+
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const totalAttempted = results.length;
+
+    // Check if failures are due to duplicates
+    const duplicates = results.filter(
+      (r) => r.status === "rejected" && isDuplicateError(r.reason),
+    ).length;
+
+    const actualFailures = failed - duplicates;
+
+    if (succeeded > 0) {
+      if (duplicates > 0 && actualFailures === 0) {
+        toast.success(
+          `Successfully assigned ${tool.tool.name} to ${succeeded} profile${succeeded !== 1 ? "s" : ""}. ${duplicates} ${duplicates === 1 ? "was" : "were"} already assigned.`,
+        );
+      } else if (actualFailures > 0) {
+        toast.warning(
+          `Assigned ${tool.tool.name} to ${succeeded} of ${totalAttempted} profile${totalAttempted !== 1 ? "s" : ""}. ${actualFailures} failed.`,
+        );
+      } else {
+        toast.success(
+          `Successfully assigned ${tool.tool.name} to ${succeeded} profile${succeeded !== 1 ? "s" : ""}`,
+        );
+      }
+    } else if (duplicates === failed) {
+      toast.info(
+        `${tool.tool.name} is already assigned to all selected profiles`,
+      );
+    } else {
+      toast.error(`Failed to assign ${tool.tool.name}`);
+      console.error("Assignment errors:", results);
+    }
+
+    setSelectedProfileIds([]);
+    setSearchQuery("");
+    setCredentialSourceMcpServerId(null);
+    setExecutionSourceMcpServerId(null);
+    onOpenChange(false);
+  }, [
+    tool,
+    selectedProfileIds,
+    credentialSourceMcpServerId,
+    executionSourceMcpServerId,
+    isLocalServer,
+    assignMutation,
+    onOpenChange,
+  ]);
+
+  const toggleProfile = useCallback((profileId: string) => {
+    setSelectedProfileIds((prev) =>
+      prev.includes(profileId)
+        ? prev.filter((id) => id !== profileId)
+        : [...prev, profileId],
+    );
+  }, []);
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        onOpenChange(newOpen);
+        if (!newOpen) {
+          setSelectedProfileIds([]);
+          setSearchQuery("");
+          setCredentialSourceMcpServerId(null);
+          setExecutionSourceMcpServerId(null);
+        }
+      }}
+    >
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Assign Tool to Profiles</DialogTitle>
+          <DialogDescription>
+            Select one or more profiles to assign "{tool?.tool.name}" to.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search profiles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto border rounded-md">
+            {!filteredProfiles || filteredProfiles.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                {searchQuery
+                  ? "No profiles match your search"
+                  : "No profiles available"}
+              </div>
+            ) : (
+              <div className="divide-y">
+                {filteredProfiles.map((profile) => (
+                  <div
+                    key={profile.id}
+                    className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 w-full text-left"
+                  >
+                    <Checkbox
+                      checked={selectedProfileIds.includes(profile.id)}
+                      onCheckedChange={() => toggleProfile(profile.id)}
+                    />
+                    <span className="text-sm">{profile.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {selectedProfileIds.length > 0 && (
+          <div className="pt-4 border-t">
+            {isLocalServer ? (
+              <>
+                <Label
+                  htmlFor="installation-select"
+                  className="text-md font-medium mb-1"
+                >
+                  Credential to use *
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Select whose MCP server installation will execute the tool
+                </p>
+                <InstallationSelect
+                  value={executionSourceMcpServerId}
+                  onValueChange={setExecutionSourceMcpServerId}
+                  className="w-full"
+                  catalogId={catalogId}
+                  agentIds={selectedProfileIds}
+                />
+              </>
+            ) : (
+              <>
+                <Label
+                  htmlFor="token-select"
+                  className="text-md font-medium mb-1"
+                >
+                  Credential to use *
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Select which token will be used when these profiles execute this
+                  tool
+                </p>
+                <TokenSelect
+                  value={credentialSourceMcpServerId}
+                  onValueChange={setCredentialSourceMcpServerId}
+                  className="w-full"
+                  catalogId={catalogId}
+                  agentIds={selectedProfileIds}
+                />
+              </>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedProfileIds([]);
+              setSearchQuery("");
+              setCredentialSourceMcpServerId(null);
+              setExecutionSourceMcpServerId(null);
+              onOpenChange(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAssign}
+            disabled={
+              selectedProfileIds.length === 0 ||
+              assignMutation.isPending ||
+              (selectedProfileIds.length > 0 &&
+                isLocalServer &&
+                !executionSourceMcpServerId) ||
+              (selectedProfileIds.length > 0 &&
+                !isLocalServer &&
+                !credentialSourceMcpServerId)
+            }
+          >
+            {assignMutation.isPending
+              ? "Assigning..."
+              : `Assign to ${selectedProfileIds.length} profile${selectedProfileIds.length !== 1 ? "s" : ""}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

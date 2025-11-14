@@ -11,8 +11,8 @@ import { API_BASE_URL, UI_BASE_URL } from "../../consts";
  */
 export interface TestFixtures {
   makeApiRequest: typeof makeApiRequest;
-  createAgent: typeof createAgent;
-  deleteAgent: typeof deleteAgent;
+  createProfile: typeof createProfile;
+  deleteProfile: typeof deleteProfile;
   createApiKey: typeof createApiKey;
   deleteApiKey: typeof deleteApiKey;
   createToolInvocationPolicy: typeof createToolInvocationPolicy;
@@ -60,14 +60,14 @@ const makeApiRequest = async ({
 };
 
 /**
- * Create an agent
+ * Create a profile
  * (authnz is handled by the authenticated session)
  */
-const createAgent = async (request: APIRequestContext, name: string) =>
+const createProfile = async (request: APIRequestContext, name: string) =>
   makeApiRequest({
     request,
     method: "post",
-    urlSuffix: "/api/agents",
+    urlSuffix: "/api/profiles",
     data: {
       name,
       teams: [],
@@ -75,14 +75,14 @@ const createAgent = async (request: APIRequestContext, name: string) =>
   });
 
 /**
- * Delete an agent
+ * Delete a profile
  * (authnz is handled by the authenticated session)
  */
-const deleteAgent = async (request: APIRequestContext, agentId: string) =>
+const deleteProfile = async (request: APIRequestContext, profileId: string) =>
   makeApiRequest({
     request,
     method: "delete",
-    urlSuffix: `/api/agents/${agentId}`,
+    urlSuffix: `/api/profiles/${profileId}`,
   });
 
 /**
@@ -124,7 +124,7 @@ const deleteApiKey = async (request: APIRequestContext, keyId: string) =>
 const createToolInvocationPolicy = async (
   request: APIRequestContext,
   policy: {
-    agentToolId: string;
+    profileToolId: string;
     argumentPath: string;
     operator: string;
     value: string;
@@ -137,7 +137,7 @@ const createToolInvocationPolicy = async (
     method: "post",
     urlSuffix: "/api/autonomy-policies/tool-invocation",
     data: {
-      agentToolId: policy.agentToolId,
+      profileToolId: policy.profileToolId,
       argumentName: policy.argumentPath, // argumentPath maps to argumentName in the schema
       operator: policy.operator,
       value: policy.value,
@@ -167,7 +167,7 @@ const deleteToolInvocationPolicy = async (
 const createTrustedDataPolicy = async (
   request: APIRequestContext,
   policy: {
-    agentToolId: string;
+    profileToolId: string;
     description: string;
     attributePath: string;
     operator: string;
@@ -273,11 +273,11 @@ export const test = base.extend<TestFixtures>({
   makeApiRequest: async ({}, use) => {
     await use(makeApiRequest);
   },
-  createAgent: async ({}, use) => {
-    await use(createAgent);
+  createProfile: async ({}, use) => {
+    await use(createProfile);
   },
-  deleteAgent: async ({}, use) => {
-    await use(deleteAgent);
+  deleteProfile: async ({}, use) => {
+    await use(deleteProfile);
   },
   createApiKey: async ({}, use) => {
     await use(createApiKey);

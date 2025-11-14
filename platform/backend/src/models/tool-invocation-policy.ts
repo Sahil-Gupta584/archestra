@@ -2,7 +2,7 @@ import { and, desc, eq, getTableColumns } from "drizzle-orm";
 import { get } from "lodash-es";
 import db, { schema } from "@/database";
 import type { ToolInvocation } from "@/types";
-import AgentToolModel from "./agent-tool";
+import AgentToolModel from "./profile-tool";
 
 type EvaluationResult = {
   isAllowed: boolean;

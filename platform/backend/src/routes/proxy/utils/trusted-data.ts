@@ -10,7 +10,7 @@ import type {
  * Evaluate if context is trusted and return updates for tool results
  *
  * @param messages - Messages in common format
- * @param agentId - The agent ID
+ * @param profileId - The profile ID
  * @param apiKey - API key for the LLM provider
  * @param provider - The LLM provider
  * @param considerContextUntrusted - If true, marks context as untrusted from the beginning
@@ -20,7 +20,7 @@ import type {
  */
 export async function evaluateIfContextIsTrusted(
   messages: CommonMessage[],
-  agentId: string,
+  profileId: string,
   apiKey: string,
   provider: SupportedProviders,
   considerContextUntrusted: boolean = false,
@@ -39,7 +39,7 @@ export async function evaluateIfContextIsTrusted(
   let hasUntrustedData = false;
   let usedDualLlm = false;
 
-  // If agent configured to consider context untrusted from the beginning,
+  // If profile configured to consider context untrusted from the beginning,
   // mark context as untrusted immediately and skip evaluation
   if (considerContextUntrusted) {
     return {
@@ -57,7 +57,7 @@ export async function evaluateIfContextIsTrusted(
 
         // Evaluate trusted data policy
         const { isTrusted, isBlocked, shouldSanitizeWithDualLlm, reason } =
-          await TrustedDataPolicyModel.evaluate(agentId, toolName, toolResult);
+          await TrustedDataPolicyModel.evaluate(profileId, toolName, toolResult);
 
         if (!isTrusted) {
           hasUntrustedData = true;
@@ -93,7 +93,7 @@ export async function evaluateIfContextIsTrusted(
                 userRequest,
                 toolResult,
               },
-              agentId,
+              profileId,
               apiKey,
               provider,
             );

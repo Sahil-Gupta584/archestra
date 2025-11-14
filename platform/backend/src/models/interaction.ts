@@ -11,7 +11,7 @@ import type {
   PaginationQuery,
   SortingQuery,
 } from "@/types";
-import AgentTeamModel from "./agent-team";
+import ProfileTeamModel from "./profile-team";
 
 class InteractionModel {
   static async create(data: InsertInteraction) {
@@ -38,26 +38,26 @@ class InteractionModel {
     pagination: PaginationQuery,
     sorting?: SortingQuery,
     userId?: string,
-    isAgentAdmin?: boolean,
+    isProfileAdmin?: boolean,
   ): Promise<PaginatedResult<Interaction>> {
     // Determine the ORDER BY clause based on sorting params
     const orderByClause = InteractionModel.getOrderByClause(sorting);
 
     // Build where clause for access control
     let whereClause: SQL | undefined;
-    if (userId && !isAgentAdmin) {
-      const accessibleAgentIds = await AgentTeamModel.getUserAccessibleAgentIds(
+    if (userId && !isProfileAdmin) {
+      const accessibleProfileIds = await ProfileTeamModel.getUserAccessibleProfileIds(
         userId,
         false,
       );
 
-      if (accessibleAgentIds.length === 0) {
+      if (accessibleProfileIds.length === 0) {
         return createPaginatedResult([], 0, pagination);
       }
 
       whereClause = inArray(
         schema.interactionsTable.agentId,
-        accessibleAgentIds,
+        accessibleProfileIds,
       );
     }
 

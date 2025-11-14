@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "@/test";
-import AgentModel from "./agent";
+import AgentModel from "./profile";
 import InteractionModel from "./interaction";
 import TeamModel from "./team";
 

@@ -64,11 +64,11 @@ Use TraceQL for more advanced filtering:
 
 This shows only OpenAI GPT-4 requests with all their spans.
 
-**Filter by Agent Labels:**
-If agents have custom labels defined, you can filter by them:
+**Filter by Profile Labels:**
+If profiles have custom labels defined, you can filter by them:
 
 ```
-{ span.agent.environment="production" }
+{ span.profile.environment="production" }
 ```
 
 ## Grafana Dashboards
@@ -83,8 +83,8 @@ This dashboard provides comprehensive monitoring across four key areas:
 - **CPU Usage**: Process CPU utilization over time
 - **Memory Usage**: Resident memory consumption
 
-#### 2. LLM Metrics  
-- **LLM Token Usage**: Input and output token rates by agent
+#### 2. LLM Metrics
+- **LLM Token Usage**: Input and output token rates by profile
   - Blue lines: Input tokens
   - Green lines: Output tokens
   - Stacked view shows total token consumption

@@ -1,6 +1,6 @@
-export { default as agentRoutes } from "./agent";
-export { default as agentPromptRoutes } from "./agent-prompts";
-export { default as agentToolRoutes } from "./agent-tool";
+export { default as profileRoutes } from "./profile";
+export { default as profilePromptRoutes } from "./profile-prompts";
+export { default as profileToolRoutes } from "./profile-tool";
 export { default as authRoutes } from "./auth";
 export { default as autonomyPolicyRoutes } from "./autonomy-policies";
 export { default as chatRoutes } from "./chat";

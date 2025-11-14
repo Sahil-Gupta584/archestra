@@ -68,7 +68,7 @@ export function OnboardingDialog({ open }: OnboardingDialogProps) {
             </div>
           ) : (
             <div className="space-y-6">
-              <ConnectionOptions agentId={defaultAgent?.id} />
+              <ConnectionOptions profileId={defaultAgent?.id} />
             </div>
           )}
         </div>

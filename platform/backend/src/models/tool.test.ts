@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@/test";
-import AgentToolModel from "./agent-tool";
+import AgentToolModel from "./profile-tool";
 import TeamModel from "./team";
 import ToolModel from "./tool";
 

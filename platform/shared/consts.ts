@@ -1,8 +1,8 @@
 export const E2eTestId = {
-  AgentsTable: "agents-table",
-  CreateAgentButton: "create-agent-button",
-  CreateAgentCloseHowToConnectButton: "create-agent-how-to-connect-button",
-  DeleteAgentButton: "delete-agent-button",
+  ProfilesTable: "profiles-table",
+  CreateProfileButton: "create-profile-button",
+  CreateProfileCloseHowToConnectButton: "create-profile-how-to-connect-button",
+  DeleteProfileButton: "delete-profile-button",
   OnboardingNextButton: "onboarding-next-button",
   OnboardingFinishButton: "onboarding-finish-button",
   OnboardingSkipButton: "onboarding-skip-button",
@@ -19,7 +19,7 @@ export const DEFAULT_ADMIN_PASSWORD_ENV_VAR_NAME =
 export const EMAIL_PLACEHOLDER = "admin@example.com";
 export const PASSWORD_PLACEHOLDER = "password";
 
-export const DEFAULT_AGENT_NAME = "Default Agent with Archestra";
+export const DEFAULT_PROFILE_NAME = "Default Profile with Archestra";
 
 /**
  * Separator used to construct fully-qualified MCP tool names

@@ -26,10 +26,10 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
   /**
    * Register HTTP proxy for Anthropic routes
    * Handles both patterns:
-   * - /v1/anthropic/:agentId/* -> https://api.anthropic.com/v1/* (agentId stripped if UUID)
+   * - /v1/anthropic/:profileId/* -> https://api.anthropic.com/v1/* (profileId stripped if UUID)
    * - /v1/anthropic/* -> https://api.anthropic.com/v1/* (direct proxy)
    *
-   * Messages are excluded and handled separately below with full agent support
+   * Messages are excluded and handled separately below with full profile support
    */
   await fastify.register(fastifyHttpProxy, {
     upstream: config.llm.anthropic.baseUrl,
@@ -93,13 +93,13 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     body: Anthropic.Types.MessagesRequest,
     headers: Anthropic.Types.MessagesHeaders,
     reply: FastifyReply,
-    agentId?: string,
+    profileId?: string,
   ) => {
     const { tools, stream } = body;
 
     fastify.log.info(
       {
-        agentId,
+        profileId,
         model: body.model,
         stream,
         messagesCount: body.messages.length,
@@ -127,20 +127,20 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
 
     let resolvedAgent: Agent;
-    if (agentId) {
-      // If agentId provided via URL, validate it exists
-      const agent = await AgentModel.findById(agentId);
+    if (profileId) {
+      // If profileId provided via URL, validate it exists
+      const agent = await AgentModel.findById(profileId);
       if (!agent) {
         return reply.status(404).send({
           error: {
-            message: `Agent with ID ${agentId} not found`,
+            message: `Profile with ID ${profileId} not found`,
             type: "not_found",
           },
         });
       }
       resolvedAgent = agent;
     } else {
-      // Otherwise get or create default agent
+      // Otherwise get or create default profile
       resolvedAgent = await AgentModel.getAgentOrCreateDefault(
         headers["user-agent"],
       );
@@ -149,8 +149,8 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
     const resolvedAgentId = resolvedAgent.id;
 
     fastify.log.info(
-      { resolvedAgentId, wasExplicit: !!agentId },
-      "Agent resolved",
+      { resolvedAgentId, wasExplicit: !!profileId },
+      "Profile resolved",
     );
 
     const { "x-api-key": anthropicApiKey } = headers;
@@ -619,7 +619,7 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
         // Store the complete interaction
         await InteractionModel.create({
-          agentId: resolvedAgentId,
+          agentId: resolvedProfileId,
           type: "anthropic:messages",
           request: body,
           response: {
@@ -736,7 +736,7 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
             }
 
             await InteractionModel.create({
-              agentId: resolvedAgentId,
+              agentId: resolvedProfileId,
               type: "anthropic:messages",
               request: body,
               response: response,
@@ -777,7 +777,7 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         }
 
         await InteractionModel.create({
-          agentId: resolvedAgentId,
+          agentId: resolvedProfileId,
           type: "anthropic:messages",
           request: body,
           response: response,
@@ -861,14 +861,14 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
   /**
    * Anthropic SDK standard format (with /v1 prefix)
-   * No agentId is provided -- agent is created/fetched based on the user-agent header
+   * No profileId is provided -- profile is created/fetched based on the user-agent header
    */
   fastify.post(
     `${API_PREFIX}/v1${MESSAGES_SUFFIX}`,
     {
       schema: {
-        operationId: RouteId.AnthropicMessagesWithDefaultAgent,
-        description: "Send a message to Anthropic using the default agent",
+        operationId: RouteId.AnthropicMessagesWithDefaultProfile,
+        description: "Send a message to Anthropic using the default profile",
         tags: ["llm-proxy"],
         body: Anthropic.API.MessagesRequestSchema,
         headers: Anthropic.API.MessagesHeadersSchema,
@@ -882,20 +882,20 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
   /**
    * Anthropic SDK standard format (with /v1 prefix)
-   * An agentId is provided -- agent is fetched based on the agentId
+   * A profileId is provided -- profile is fetched based on the profileId
    *
    * NOTE: this is really only needed for n8n compatibility...
    */
   fastify.post(
-    `${API_PREFIX}/:agentId/v1${MESSAGES_SUFFIX}`,
+    `${API_PREFIX}/:profileId/v1${MESSAGES_SUFFIX}`,
     {
       schema: {
-        operationId: RouteId.AnthropicMessagesWithAgent,
+        operationId: RouteId.AnthropicMessagesWithProfile,
         description:
-          "Send a message to Anthropic using a specific agent (n8n URL format)",
+          "Send a message to Anthropic using a specific profile (n8n URL format)",
         tags: ["llm-proxy"],
         params: z.object({
-          agentId: UuidIdSchema,
+          profileId: UuidIdSchema,
         }),
         body: Anthropic.API.MessagesRequestSchema,
         headers: Anthropic.API.MessagesHeadersSchema,
@@ -903,7 +903,7 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async ({ body, headers, params }, reply) => {
-      return handleMessages(body, headers, reply, params.agentId);
+      return handleMessages(body, headers, reply, params.profileId);
     },
   );
 };

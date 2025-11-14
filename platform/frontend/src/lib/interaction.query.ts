@@ -7,14 +7,14 @@ import { DEFAULT_TABLE_LIMIT } from "./utils";
 const { getInteraction, getInteractions } = archestraApiSdk;
 
 export function useInteractions({
-  agentId,
+  profileId,
   limit = DEFAULT_TABLE_LIMIT,
   offset = 0,
   sortBy,
   sortDirection = "desc",
   initialData,
 }: {
-  agentId?: string;
+  profileId?: string;
   limit?: number;
   offset?: number;
   sortBy?: NonNullable<
@@ -24,11 +24,11 @@ export function useInteractions({
   initialData?: archestraApiTypes.GetInteractionsResponses["200"];
 } = {}) {
   return useSuspenseQuery({
-    queryKey: ["interactions", agentId, limit, offset, sortBy, sortDirection],
+    queryKey: ["interactions", profileId, limit, offset, sortBy, sortDirection],
     queryFn: async () => {
       const response = await getInteractions({
         query: {
-          ...(agentId ? { agentId } : {}),
+          ...(profileId ? { profileId } : {}),
           limit,
           offset,
           ...(sortBy ? { sortBy } : {}),

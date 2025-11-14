@@ -38,15 +38,15 @@ export type ConversationWithMessages = z.infer<
   typeof SelectConversationWithMessagesSchema
 >;
 
-// Conversation with agent details
-export const SelectConversationWithAgentSchema =
+// Conversation with profile details
+export const SelectConversationWithProfileSchema =
   SelectConversationSchema.extend({
-    agent: z.object({
+    profile: z.object({
       id: z.string(),
       name: z.string(),
     }),
   });
 
-export type ConversationWithAgent = z.infer<
-  typeof SelectConversationWithAgentSchema
+export type ConversationWithProfile = z.infer<
+  typeof SelectConversationWithProfileSchema
 >;

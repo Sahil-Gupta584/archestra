@@ -9,38 +9,38 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const { getAgentPrompts } = archestraApiSdk;
+const { getProfilePrompts } = archestraApiSdk;
 
 interface PromptSuggestionsProps {
-  agentId?: string;
-  agentName?: string;
+  profileId?: string;
+  profileName?: string;
   onSelectPrompt: (prompt: string) => void;
 }
 
 export function PromptSuggestions({
-  agentId,
-  agentName,
+  profileId,
+  profileName,
   onSelectPrompt,
 }: PromptSuggestionsProps) {
-  // Fetch prompts assigned to the agent with enabled flag
-  const { data: agentPrompts = [] } = useQuery({
-    queryKey: ["agents", agentId, "prompts"],
+  // Fetch prompts assigned to the profile with enabled flag
+  const { data: profilePrompts = [] } = useQuery({
+    queryKey: ["profiles", profileId, "prompts"],
     queryFn: async () => {
-      if (!agentId) return [];
-      return (await getAgentPrompts({ path: { agentId } })).data ?? [];
+      if (!profileId) return [];
+      return (await getProfilePrompts({ path: { profileId } })).data ?? [];
     },
-    enabled: !!agentId,
+    enabled: !!profileId,
   });
 
-  // If no agentId, show empty state
-  if (!agentId) {
+  // If no profileId, show empty state
+  if (!profileId) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="max-w-2xl w-full space-y-6">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-semibold">Start a Conversation</h2>
             <p className="text-muted-foreground">
-              Select an agent to see prompt suggestions
+              Select a profile to see prompt suggestions
             </p>
           </div>
         </div>
@@ -49,12 +49,12 @@ export function PromptSuggestions({
   }
 
   // Extract system and regular prompts
-  const systemPrompt = agentPrompts.find(
-    (ap) => ap.prompt.type === "system",
+  const systemPrompt = profilePrompts.find(
+    (pp) => pp.prompt.type === "system",
   )?.prompt;
-  const regularPrompts = agentPrompts
-    .filter((ap) => ap.prompt.type === "regular")
-    .map((ap) => ap.prompt);
+  const regularPrompts = profilePrompts
+    .filter((pp) => pp.prompt.type === "regular")
+    .map((pp) => pp.prompt);
 
   return (
     <div className="flex-1 flex items-center justify-center p-8">
@@ -120,13 +120,13 @@ export function PromptSuggestions({
           )}
         </div>
 
-        {agentId && agentName && (
+        {profileId && profileName && (
           <div className="text-center pt-2">
             <Link
-              href={`/agents?agentId=${agentId}`}
+              href={`/profiles?profileId=${profileId}`}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              + Add more prompts to {agentName}
+              + Add more prompts to {profileName}
             </Link>
           </div>
         )}

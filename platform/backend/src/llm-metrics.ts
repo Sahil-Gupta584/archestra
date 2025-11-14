@@ -28,8 +28,8 @@ let currentLabelKeys: string[] = [];
 const sanitizeRegexp = /[^a-zA-Z0-9_]/g;
 
 /**
- * Initialize LLM metrics with dynamic agent label keys
- * @param labelKeys Array of agent label keys to include as metric labels
+ * Initialize LLM metrics with dynamic profile label keys
+ * @param labelKeys Array of profile label keys to include as metric labels
  */
 export function initializeMetrics(labelKeys: string[]): void {
   // Prometheus labels have naming restrictions. Dashes are not allowed, for example.
@@ -62,7 +62,7 @@ export function initializeMetrics(labelKeys: string[]): void {
   }
 
   // Create new metrics with updated label names
-  const baseLabelNames = ["provider", "agent_id", "agent_name"];
+  const baseLabelNames = ["provider", "profile_id", "profile_name"];
   const durationLabelNames = [
     ...baseLabelNames,
     "status_code",
@@ -85,30 +85,30 @@ export function initializeMetrics(labelKeys: string[]): void {
   });
 
   logger.info(
-    `Metrics initialized with ${nextLabelKeys.length} agent label keys: ${nextLabelKeys.join(", ")}`,
+    `Metrics initialized with ${nextLabelKeys.length} profile label keys: ${nextLabelKeys.join(", ")}`,
   );
 }
 
 /**
- * Helper function to build metric labels from agent
+ * Helper function to build metric labels from profile
  */
 function buildMetricLabels(
   agent: Agent,
   additionalLabels: Record<string, string>,
 ): Record<string, string> {
   const labels: Record<string, string> = {
-    agent_id: agent.id,
-    agent_name: agent.name,
+    profile_id: agent.id,
+    profile_name: agent.name,
     ...additionalLabels,
   };
 
-  // Add agent label values for all registered label keys
+  // Add profile label values for all registered label keys
   for (const labelKey of currentLabelKeys) {
-    // Find the label value for this key from the agent's labels
-    const agentLabel = agent.labels?.find(
+    // Find the label value for this key from the profile's labels
+    const profileLabel = agent.labels?.find(
       (l) => l.key.replace(sanitizeRegexp, "_") === labelKey,
     );
-    labels[labelKey] = agentLabel?.value ?? "";
+    labels[labelKey] = profileLabel?.value ?? "";
   }
 
   return labels;

@@ -75,7 +75,7 @@ function McpToolCallsTable({
     archestraApiTypes.GetMcpToolCallsData["query"]
   >["sortBy"] =
     sortBy === "agent"
-      ? "agentId"
+      ? "profileId"
       : sortBy === "mcpServerName"
         ? "mcpServerName"
         : sortBy === "method"

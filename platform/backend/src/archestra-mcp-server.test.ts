@@ -2,7 +2,7 @@
 import { MCP_SERVER_TOOL_NAME_SEPARATOR } from "@shared";
 import { InternalMcpCatalogModel } from "@/models";
 import { beforeEach, describe, expect, test, vi } from "@/test";
-import type { Agent } from "@/types";
+import type { Profile } from "@/types";
 import {
   type ArchestraContext,
   executeArchestraTool,
@@ -47,12 +47,12 @@ describe("getArchestraMcpTools", () => {
     expect(searchTool?.title).toBe("Search Private MCP Registry");
   });
 
-  test("should have create_agent tool", () => {
+  test("should have create_profile tool", () => {
     const tools = getArchestraMcpTools();
-    const createAgentTool = tools.find((t) => t.name.endsWith("create_agent"));
+    const createProfileTool = tools.find((t) => t.name.endsWith("create_profile"));
 
-    expect(createAgentTool).toBeDefined();
-    expect(createAgentTool?.title).toBe("Create Agent");
+    expect(createProfileTool).toBeDefined();
+    expect(createProfileTool?.title).toBe("Create Profile");
   });
 
   test("should not have create_mcp_server_installation_request tool (disabled)", () => {
@@ -96,28 +96,28 @@ describe("getArchestraMcpTools", () => {
     expect(tool?.title).toBe("Delete Limit");
   });
 
-  test("should have get_agent_token_usage tool", () => {
+  test("should have get_profile_token_usage tool", () => {
     const tools = getArchestraMcpTools();
-    const tool = tools.find((t) => t.name.endsWith("get_agent_token_usage"));
+    const tool = tools.find((t) => t.name.endsWith("get_profile_token_usage"));
 
     expect(tool).toBeDefined();
-    expect(tool?.title).toBe("Get Agent Token Usage");
+    expect(tool?.title).toBe("Get Profile Token Usage");
   });
 });
 
 describe("executeArchestraTool", () => {
-  let testAgent: Agent;
+  let testProfile: Profile;
   let mockContext: ArchestraContext;
 
   beforeEach(async ({ makeAgent }) => {
-    testAgent = await makeAgent({ name: "Test Agent" });
+    testProfile = await makeAgent({ name: "Test Profile" });
     mockContext = {
-      agent: testAgent,
+      profile: testProfile,
     };
   });
 
   describe("whoami tool", () => {
-    test("should return agent information", async () => {
+    test("should return profile information", async () => {
       const result = await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}whoami`,
         undefined,
@@ -127,8 +127,8 @@ describe("executeArchestraTool", () => {
       expect(result.isError).toBe(false);
       expect(result.content).toHaveLength(1);
       expect(result.content[0]).toHaveProperty("type", "text");
-      expect((result.content[0] as any).text).toContain("Test Agent");
-      expect((result.content[0] as any).text).toContain(testAgent.id);
+      expect((result.content[0] as any).text).toContain("Test Profile");
+      expect((result.content[0] as any).text).toContain(testProfile.id);
     });
   });
 
@@ -224,24 +224,24 @@ describe("executeArchestraTool", () => {
     });
   });
 
-  describe("create_agent tool", () => {
-    test("should create a new agent with required fields only", async () => {
+  describe("create_profile tool", () => {
+    test("should create a new profile with required fields only", async () => {
       const result = await executeArchestraTool(
-        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_agent`,
-        { name: "New Test Agent" },
+        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_profile`,
+        { name: "New Test Profile" },
         mockContext,
       );
 
       expect(result.isError).toBe(false);
       expect(result.content).toHaveLength(1);
       expect((result.content[0] as any).text).toContain(
-        "Successfully created agent",
+        "Successfully created profile",
       );
-      expect((result.content[0] as any).text).toContain("New Test Agent");
-      expect((result.content[0] as any).text).toContain("Agent ID:");
+      expect((result.content[0] as any).text).toContain("New Test Profile");
+      expect((result.content[0] as any).text).toContain("Profile ID:");
     });
 
-    test("should create a new agent with all optional fields", async ({
+    test("should create a new profile with all optional fields", async ({
       makeTeam,
       makeUser,
       makeOrganization,
@@ -253,9 +253,9 @@ describe("executeArchestraTool", () => {
       });
 
       const result = await executeArchestraTool(
-        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_agent`,
+        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_profile`,
         {
-          name: "Full Featured Agent",
+          name: "Full Featured Profile",
           teams: [team.id],
           labels: [{ key: "environment", value: "production" }],
         },
@@ -264,35 +264,35 @@ describe("executeArchestraTool", () => {
 
       expect(result.isError).toBe(false);
       expect((result.content[0] as any).text).toContain(
-        "Successfully created agent",
+        "Successfully created profile",
       );
-      expect((result.content[0] as any).text).toContain("Full Featured Agent");
+      expect((result.content[0] as any).text).toContain("Full Featured Profile");
       expect((result.content[0] as any).text).toContain(team.id);
     });
 
     test("should return error when name is missing", async () => {
       const result = await executeArchestraTool(
-        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_agent`,
+        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_profile`,
         {},
         mockContext,
       );
 
       expect(result.isError).toBe(true);
       expect((result.content[0] as any).text).toContain(
-        "Agent name is required",
+        "Profile name is required",
       );
     });
 
     test("should return error when name is empty string", async () => {
       const result = await executeArchestraTool(
-        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_agent`,
+        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_profile`,
         { name: "   " },
         mockContext,
       );
 
       expect(result.isError).toBe(true);
       expect((result.content[0] as any).text).toContain(
-        "Agent name is required",
+        "Profile name is required",
       );
     });
 
@@ -305,13 +305,13 @@ describe("executeArchestraTool", () => {
         .mockRejectedValue(new Error("Database error"));
 
       const result = await executeArchestraTool(
-        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_agent`,
-        { name: "Test Agent" },
+        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_profile`,
+        { name: "Test Profile" },
         mockContext,
       );
 
       expect(result.isError).toBe(true);
-      expect((result.content[0] as any).text).toContain("Error creating agent");
+      expect((result.content[0] as any).text).toContain("Error creating profile");
       expect((result.content[0] as any).text).toContain("Database error");
 
       // Restore the original method
@@ -343,8 +343,8 @@ describe("executeArchestraTool", () => {
       const result = await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_limit`,
         {
-          entity_type: "agent",
-          entity_id: testAgent.id,
+          entity_type: "profile",
+          entity_id: testProfile.id,
           limit_type: "token_cost",
           limit_value: 1000000,
           model: "claude-3-5-sonnet-20241022",
@@ -365,7 +365,7 @@ describe("executeArchestraTool", () => {
       const result = await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_limit`,
         {
-          entity_type: "agent",
+          entity_type: "profile",
         },
         mockContext,
       );
@@ -378,8 +378,8 @@ describe("executeArchestraTool", () => {
       const result = await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_limit`,
         {
-          entity_type: "agent",
-          entity_id: testAgent.id,
+          entity_type: "profile",
+          entity_id: testProfile.id,
           limit_type: "token_cost",
           limit_value: 1000000,
         },
@@ -397,8 +397,8 @@ describe("executeArchestraTool", () => {
       await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_limit`,
         {
-          entity_type: "agent",
-          entity_id: testAgent.id,
+          entity_type: "profile",
+          entity_id: testProfile.id,
           limit_type: "token_cost",
           limit_value: 1000000,
           model: "claude-3-5-sonnet-20241022",
@@ -420,8 +420,8 @@ describe("executeArchestraTool", () => {
       await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_limit`,
         {
-          entity_type: "agent",
-          entity_id: testAgent.id,
+          entity_type: "profile",
+          entity_id: testProfile.id,
           limit_type: "token_cost",
           limit_value: 1000000,
           model: "claude-3-5-sonnet-20241022",
@@ -431,7 +431,7 @@ describe("executeArchestraTool", () => {
 
       const result = await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_limits`,
-        { entity_type: "agent" },
+        { entity_type: "profile" },
         mockContext,
       );
 
@@ -456,8 +456,8 @@ describe("executeArchestraTool", () => {
       const createResult = await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_limit`,
         {
-          entity_type: "agent",
-          entity_id: testAgent.id,
+          entity_type: "profile",
+          entity_id: testProfile.id,
           limit_type: "token_cost",
           limit_value: 1000000,
           model: "claude-3-5-sonnet-20241022",
@@ -519,8 +519,8 @@ describe("executeArchestraTool", () => {
       const createResult = await executeArchestraTool(
         `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}create_limit`,
         {
-          entity_type: "agent",
-          entity_id: testAgent.id,
+          entity_type: "profile",
+          entity_id: testProfile.id,
           limit_type: "token_cost",
           limit_value: 1000000,
           model: "claude-3-5-sonnet-20241022",
@@ -572,37 +572,37 @@ describe("executeArchestraTool", () => {
     });
   });
 
-  describe("get_agent_token_usage tool", () => {
-    test("should return token usage for current agent", async () => {
+  describe("get_profile_token_usage tool", () => {
+    test("should return token usage for current profile", async () => {
       const result = await executeArchestraTool(
-        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_agent_token_usage`,
+        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_profile_token_usage`,
         undefined,
         mockContext,
       );
 
       expect(result.isError).toBe(false);
       expect((result.content[0] as any).text).toContain(
-        "Token usage for agent",
+        "Token usage for profile",
       );
       expect((result.content[0] as any).text).toContain("Total Input Tokens:");
       expect((result.content[0] as any).text).toContain("Total Output Tokens:");
       expect((result.content[0] as any).text).toContain("Total Tokens:");
     });
 
-    test("should return token usage for specified agent", async ({
+    test("should return token usage for specified profile", async ({
       makeAgent,
     }) => {
-      const otherAgent = await makeAgent({ name: "Other Agent" });
+      const otherProfile = await makeAgent({ name: "Other Profile" });
 
       const result = await executeArchestraTool(
-        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_agent_token_usage`,
-        { agent_id: otherAgent.id },
+        `${MCP_SERVER_NAME}${MCP_SERVER_TOOL_NAME_SEPARATOR}get_profile_token_usage`,
+        { profile_id: otherProfile.id },
         mockContext,
       );
 
       expect(result.isError).toBe(false);
       expect((result.content[0] as any).text).toContain(
-        `Token usage for agent ${otherAgent.id}`,
+        `Token usage for profile ${otherProfile.id}`,
       );
     });
   });

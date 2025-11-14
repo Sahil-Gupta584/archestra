@@ -4,16 +4,16 @@ import { z } from "zod";
 import { OptimizationRuleModel } from "@/models";
 
 const optimizationRuleRoutes: FastifyPluginAsyncZod = async (fastify) => {
-  // Get all optimization rules for an agent
+  // Get all optimization rules for a profile
   fastify.get(
-    "/api/agents/:agentId/optimization-rules",
+    "/api/profiles/:profileId/optimization-rules",
     {
       schema: {
         operationId: RouteId.GetOptimizationRules,
-        description: "Get all optimization rules for an agent",
+        description: "Get all optimization rules for a profile",
         tags: ["Optimization Rules"],
         params: z.object({
-          agentId: z.string().uuid(),
+          profileId: z.string().uuid(),
         }),
         response: {
           200: z.array(
@@ -34,9 +34,9 @@ const optimizationRuleRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const { agentId } = request.params;
+      const { profileId } = request.params;
 
-      const rules = await OptimizationRuleModel.findByAgentId(agentId);
+      const rules = await OptimizationRuleModel.findByAgentId(profileId);
 
       return reply.status(200).send(rules);
     },
@@ -44,14 +44,14 @@ const optimizationRuleRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
   // Create a new optimization rule
   fastify.post(
-    "/api/agents/:agentId/optimization-rules",
+    "/api/profiles/:profileId/optimization-rules",
     {
       schema: {
         operationId: RouteId.CreateOptimizationRule,
-        description: "Create a new optimization rule for an agent",
+        description: "Create a new optimization rule for a profile",
         tags: ["Optimization Rules"],
         params: z.object({
-          agentId: z.string().uuid(),
+          profileId: z.string().uuid(),
         }),
         body: z.object({
           ruleType: z.string().min(1),
@@ -81,12 +81,12 @@ const optimizationRuleRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const { agentId } = request.params;
+      const { profileId } = request.params;
       const { ruleType, conditions, provider, targetModel, priority, enabled } =
         request.body;
 
       const rule = await OptimizationRuleModel.create({
-        agentId,
+        agentId: profileId,
         ruleType,
         conditions,
         provider,

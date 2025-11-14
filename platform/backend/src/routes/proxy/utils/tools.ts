@@ -3,7 +3,7 @@ import { AgentToolModel, ToolModel } from "@/models";
 
 /**
  * Persist tools if present in the request
- * Skips tools that are already connected to the agent via MCP servers
+ * Skips tools that are already connected to the profile via MCP servers
  * Also skips Archestra built-in tools
  */
 export const persistTools = async (
@@ -12,10 +12,10 @@ export const persistTools = async (
     toolParameters?: Record<string, unknown>;
     toolDescription?: string;
   }>,
-  agentId: string,
+  profileId: string,
 ) => {
-  // Get names of all MCP tools already assigned to this agent
-  const mcpToolNames = await ToolModel.getMcpToolNamesByAgent(agentId);
+  // Get names of all MCP tools already assigned to this profile
+  const mcpToolNames = await ToolModel.getMcpToolNamesByAgent(profileId);
   const mcpToolNamesSet = new Set(mcpToolNames);
 
   // Get Archestra built-in tool names
@@ -41,10 +41,10 @@ export const persistTools = async (
       name: toolName,
       parameters: toolParameters,
       description: toolDescription,
-      agentId,
+      agentId: profileId,
     });
 
-    // Create the agent-tool relationship
-    await AgentToolModel.createIfNotExists(agentId, tool.id);
+    // Create the profile-tool relationship
+    await AgentToolModel.createIfNotExists(profileId, tool.id);
   }
 };

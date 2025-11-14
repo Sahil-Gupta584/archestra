@@ -1,9 +1,9 @@
 export { default as accountsTable } from "./account";
-export { default as agentsTable } from "./agent";
-export { default as agentLabelsTable } from "./agent-label";
-export { default as agentPromptsTable } from "./agent-prompt";
-export { default as agentTeamsTable } from "./agent-team";
-export { default as agentToolsTable } from "./agent-tool";
+export { default as profilesTable } from "./profile";
+export { default as profileLabelsTable } from "./profile-label";
+export { default as profilePromptsTable } from "./profile-prompt";
+export { default as profileTeamsTable } from "./profile-team";
+export { default as profileToolsTable } from "./profile-tool";
 export { default as apikeysTable } from "./api-key";
 export { default as chatSettingsTable } from "./chat-settings";
 export { default as conversationsTable } from "./conversation";
