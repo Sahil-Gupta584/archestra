@@ -149,7 +149,7 @@ ARCHESTRA_LOGGING_LEVEL=info  # Options: trace, debug, info, warn, error, fatal
 
 **LLM Proxy** returns tool calls to clients for execution (standard OpenAI/Anthropic behavior). Clients implement the agentic loop:
 1. Call LLM proxy → receive tool_use/tool_calls
-2. Execute tools via MCP Gateway (`POST /v1/mcp` with `Bearer ${agentId}`)
+2. Execute tools via MCP Gateway (`POST /v1/mcp` with `Bearer ${profileId}`)
 3. Send tool results back to LLM proxy
 4. Receive final answer
 
@@ -167,9 +167,9 @@ Tool invocation policies and trusted data policies are still enforced by the pro
 
 ## Observability
 
-**Tracing**: LLM proxy routes add profile data via `startActiveLlmSpan()`. Traces include `agent.id`, `agent.name` and dynamic `agent.<label>` attributes. Profile label keys are fetched from database on startup and included as resource attributes. Traces stored in Grafana Tempo.
+**Tracing**: LLM proxy routes add profile data via `startActiveLlmSpan()`. Traces include `profile.id`, `profile.name` and dynamic `profile.<label>` attributes. Profile label keys are fetched from database on startup and included as resource attributes. Traces stored in Grafana Tempo.
 
-**Metrics**: Prometheus metrics (`llm_request_duration_seconds`, `llm_tokens_total`) include `agent_name`, `agent_id` and dynamic profile labels as dimensions. Metrics are reinitialized on startup with current label keys from database.
+**Metrics**: Prometheus metrics (`llm_request_duration_seconds`, `llm_tokens_total`) include `profile_name`, `profile_id` and dynamic profile labels as dimensions. Metrics are reinitialized on startup with current label keys from database.
 
 **Local Setup**: Use `tilt trigger observability` or `docker compose -f dev/docker-compose.observability.yml up` to start Tempo, Prometheus, and Grafana with pre-configured datasources.
 
@@ -289,10 +289,10 @@ Tool invocation policies and trusted data policies are still enforced by the pro
 - Profile-based conversations: Each conversation is tied to a specific profile
 - Profile selection via dropdown: Users select a profile when creating a new conversation
 - MCP tool integration: Chat automatically uses the profile's assigned MCP tools via MCP Gateway
-- LLM Proxy integration: Chat routes through LLM Proxy (`/v1/anthropic/${agentId}`) for security policies, dual LLM, and observability
-- Profile authentication: Connects to internal MCP Gateway using `Authorization: Bearer ${agentId}`
-- Database schema: Conversations table includes `agentId` foreign key to agents table
-- UI components: `AgentSelector` dropdown, `ChatSidebarSection` for conversation navigation in main sidebar
+- LLM Proxy integration: Chat routes through LLM Proxy (`/v1/anthropic/${profileId}`) for security policies, dual LLM, and observability
+- Profile authentication: Connects to internal MCP Gateway using `Authorization: Bearer ${profileId}`
+- Database schema: Conversations table includes `profileId` foreign key to profiles table
+- UI components: `ProfileSelector` dropdown, `ChatSidebarSection` for conversation navigation in main sidebar
 - Conversation navigation: Recent chats shown as sub-items under "Chat" menu in main sidebar (ChatSidebarSection component)
 - Hide tool calls toggle: Located in chat messages header, persisted in localStorage
 - Conversation management: Select, edit (inline rename), delete conversations directly in sidebar sub-navigation
@@ -323,9 +323,9 @@ Tool invocation policies and trusted data policies are still enforced by the pro
 - **Backend**: Vitest with PGLite for in-memory PostgreSQL testing - never mock database interfaces, use real database operations via models for comprehensive integration testing
 - **E2E Tests**: Playwright with test fixtures pattern - import from `./fixtures` in API/UI test directories
 - **E2E Test Fixtures**: 
-  - API fixtures: `makeApiRequest`, `createAgent`, `deleteAgent`, `createApiKey`, `deleteApiKey`, `createToolInvocationPolicy`, `deleteToolInvocationPolicy`, `createTrustedDataPolicy`, `deleteTrustedDataPolicy`
+  - API fixtures: `makeApiRequest`, `createProfile`, `deleteProfile`, `createApiKey`, `deleteApiKey`, `createToolInvocationPolicy`, `deleteToolInvocationPolicy`, `createTrustedDataPolicy`, `deleteTrustedDataPolicy`
   - UI fixtures: `goToPage`, `makeRandomString`
-- **Backend Test Fixtures**: Import from `@/test` to access Vitest context with fixture functions. Available fixtures: `makeUser`, `makeAdmin`, `makeOrganization`, `makeTeam`, `makeAgent`, `makeTool`, `makeAgentTool`, `makeToolPolicy`, `makeTrustedDataPolicy`, `makeCustomRole`, `makeMember`, `makeMcpServer`, `makeInternalMcpCatalog`, `makeInvitation`
+- **Backend Test Fixtures**: Import from `@/test` to access Vitest context with fixture functions. Available fixtures: `makeUser`, `makeAdmin`, `makeOrganization`, `makeTeam`, `makeProfile`, `makeTool`, `makeProfileTool`, `makeToolPolicy`, `makeTrustedDataPolicy`, `makeCustomRole`, `makeMember`, `makeMcpServer`, `makeInternalMcpCatalog`, `makeInvitation`
 
 **Backend Test Fixtures Usage**:
 ```typescript
@@ -343,11 +343,11 @@ test("example test", async ({ makeUser, makeOrganization, makeTeam }) => {
 ```typescript
 import { test } from "./fixtures";
 
-test("API example", async ({ request, createAgent, deleteAgent }) => {
-  const response = await createAgent(request, "Test Agent");
-  const agent = await response.json();
+test("API example", async ({ request, createProfile, deleteProfile }) => {
+  const response = await createProfile(request, "Test Profile");
+  const profile = await response.json();
   // test logic...
-  await deleteAgent(request, agent.id);
+  await deleteProfile(request, profile.id);
 });
 ```
 - never amend commits
