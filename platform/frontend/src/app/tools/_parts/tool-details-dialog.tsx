@@ -17,6 +17,7 @@ import {
 import { useInternalMcpCatalog } from "@/lib/internal-mcp-catalog.query";
 import { isMcpTool } from "@/lib/tool.utils";
 import { formatDate } from "@/lib/utils";
+import { TruncatedText } from "@/components/truncated-text";
 import { ResponseModifierEditor } from "./response-modifier-editor";
 import { ToolCallPolicies } from "./tool-call-policies";
 import { ToolReadonlyDetails } from "./tool-readonly-details";
@@ -48,9 +49,11 @@ export function ToolDetailsDialog({
                 {agentTool.tool.name}
               </DialogTitle>
               {agentTool.tool.description && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {agentTool.tool.description}
-                </p>
+                <TruncatedText
+                  message={agentTool.tool.description}
+                  maxLength={200}
+                  className="text-sm text-muted-foreground mt-1"
+                />
               )}
             </div>
             <div className="flex gap-6 text-sm ml-6">
