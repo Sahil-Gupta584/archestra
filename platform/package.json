@@ -24,7 +24,7 @@
     "db:seed:mock-data": "turbo db:seed:mock-data",
     "cleanup:dev:k8s": "kubectl delete namespace archestra-dev",
     "knip:check": "knip",
-    "knip:fix": "knip --fix"
+    "knip:fix": "knip --fix --allow-remove-files && pnpm lint:fix:unsafe"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.5",
