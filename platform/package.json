@@ -22,10 +22,13 @@
     "db:push": "turbo db:push",
     "db:studio": "turbo db:studio",
     "db:seed:mock-data": "turbo db:seed:mock-data",
-    "cleanup:dev:k8s": "kubectl delete namespace archestra-dev"
+    "cleanup:dev:k8s": "kubectl delete namespace archestra-dev",
+    "knip:check": "knip",
+    "knip:fix": "knip --fix"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.5",
+    "knip": "^5.70.0",
     "turbo": "^2.6.1",
     "typescript": "^5.9.2"
   },
