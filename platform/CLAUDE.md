@@ -313,6 +313,9 @@ Tool invocation policies and trusted data policies are still enforced by the pro
 - Enabled via `convert_tool_results_to_toon` boolean field on profiles
 - Automatically converts JSON tool results to TOON format before sending to LLM
 - Particularly useful for profiles dealing with structured data from database or API tools
+- **Debugging**: Set `ARCHESTRA_LOGGING_LEVEL=debug` to see final requests with TOON-formatted content in logs
+  - Look for log message: "Final request to Anthropic/OpenAI API (after TOON conversion and all modifications)"
+  - Also logs: "Converted tool results to TOON format" when conversion happens
 
 **Chat Feature**:
 

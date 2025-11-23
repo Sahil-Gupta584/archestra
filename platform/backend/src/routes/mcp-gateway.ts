@@ -11,6 +11,7 @@ import {
   ARCHESTRA_MCP_SERVER_NAME,
   MCP_SERVER_TOOL_NAME_SEPARATOR,
 } from "@shared";
+import { encode as toonEncode } from "@toon-format/toon";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
@@ -35,7 +36,8 @@ interface SessionData {
   agent?: {
     id: string;
     name: string;
-  }; // Cache agent data
+    convertToolResultsToToon: boolean;
+  }; // Cache agent data including TOON conversion flag
 }
 
 /**
@@ -75,8 +77,15 @@ function cleanupExpiredSessions(): void {
 async function createAgentServer(
   agentId: string,
   logger: { info: (obj: unknown, msg: string) => void },
-  cachedAgent?: { name: string; id: string },
-): Promise<{ server: Server; agent: { name: string; id: string } }> {
+  cachedAgent?: {
+    name: string;
+    id: string;
+    convertToolResultsToToon: boolean;
+  },
+): Promise<{
+  server: Server;
+  agent: { name: string; id: string; convertToolResultsToToon: boolean };
+}> {
   const server = new Server(
     {
       name: `archestra-agent-${agentId}`,
@@ -96,7 +105,11 @@ async function createAgentServer(
     if (!fetchedAgent) {
       throw new Error(`Agent not found: ${agentId}`);
     }
-    agent = fetchedAgent;
+    agent = {
+      id: fetchedAgent.id,
+      name: fetchedAgent.name,
+      convertToolResultsToToon: fetchedAgent.convertToolResultsToToon,
+    };
   }
 
   // Create a map of Archestra tool names to their titles
@@ -225,11 +238,43 @@ async function createAgentServer(
           "MCP gateway tool call completed",
         );
 
+        // Convert result to TOON format if enabled for this agent
+        let resultText: string;
+        if (agent.convertToolResultsToToon) {
+          try {
+            // Convert result content to TOON format
+            resultText = toonEncode(result.content);
+            logger.info(
+              {
+                agentId,
+                toolName: name,
+                originalLength: JSON.stringify(result.content).length,
+                toonLength: resultText.length,
+                savings: `${(
+                  (1 -
+                    resultText.length / JSON.stringify(result.content).length) *
+                    100
+                ).toFixed(1)}%`,
+              },
+              "Converted tool result to TOON format",
+            );
+          } catch (conversionError) {
+            // If TOON conversion fails, fall back to JSON
+            logger.info(
+              { agentId, toolName: name, error: conversionError },
+              "TOON conversion failed, falling back to JSON",
+            );
+            resultText = JSON.stringify(result.content);
+          }
+        } else {
+          resultText = JSON.stringify(result.content);
+        }
+
         // Transform CommonToolResult to MCP response format
         return {
           content: Array.isArray(result.content)
             ? result.content
-            : [{ type: "text", text: JSON.stringify(result.content) }],
+            : [{ type: "text", text: resultText }],
           isError: false,
         };
       } catch (error) {

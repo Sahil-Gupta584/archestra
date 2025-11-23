@@ -332,6 +332,21 @@ const anthropicProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         "Messages filtered after trusted data evaluation",
       );
 
+      // Log final request that will be sent to Anthropic (after all modifications)
+      fastify.log.debug(
+        {
+          resolvedAgentId,
+          model,
+          finalRequest: {
+            messages: filteredMessages,
+            tools: mergedTools.length > 0 ? mergedTools : undefined,
+            max_tokens: body.max_tokens,
+            temperature: body.temperature,
+          },
+        },
+        "Final request to Anthropic API (after TOON conversion and all modifications)",
+      );
+
       if (stream) {
         // Handle streaming response with span to measure LLM call duration
         const messageStream = await utils.tracing.startActiveLlmSpan(

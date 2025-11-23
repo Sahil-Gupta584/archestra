@@ -302,6 +302,21 @@ const openAiProxyRoutes: FastifyPluginAsyncZod = async (fastify) => {
         "Messages filtered after trusted data evaluation",
       );
 
+      // Log final request that will be sent to OpenAI (after all modifications)
+      fastify.log.debug(
+        {
+          resolvedAgentId,
+          model,
+          finalRequest: {
+            messages: filteredMessages,
+            tools: mergedTools.length > 0 ? mergedTools : undefined,
+            temperature: body.temperature,
+            max_tokens: body.max_tokens,
+          },
+        },
+        "Final request to OpenAI API (after TOON conversion and all modifications)",
+      );
+
       if (stream) {
         // Handle streaming response with span to measure LLM call duration
         const streamingResponse = await utils.tracing.startActiveLlmSpan(
