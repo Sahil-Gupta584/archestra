@@ -25,8 +25,12 @@ vi.mock("@modelcontextprotocol/sdk/client/index.js", () => ({
   }),
 }));
 
+// Track StreamableHTTPClientTransport constructor calls - use vi.hoisted to avoid initialization errors
+const { mockStreamableHTTPClientTransport } = vi.hoisted(() => ({
+  mockStreamableHTTPClientTransport: vi.fn(),
+}));
 vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js", () => ({
-  StreamableHTTPClientTransport: vi.fn(),
+  StreamableHTTPClientTransport: mockStreamableHTTPClientTransport,
 }));
 
 // Mock McpServerRuntimeManager - use vi.hoisted to avoid initialization errors
@@ -87,6 +91,7 @@ describe("McpClient", () => {
     mockUsesStreamableHttp.mockReset();
     mockGetHttpEndpointUrl.mockReset();
     mockGetPod.mockReset();
+    mockStreamableHTTPClientTransport.mockReset();
   });
 
   describe("executeToolCall", () => {
@@ -678,6 +683,348 @@ describe("McpClient", () => {
           content: [{ type: "text", text: "Success from K8s attach" }],
           isError: false,
         });
+      });
+    });
+
+    describe("Remote Server Authentication", () => {
+      test("uses query parameter authentication when URL contains 'token' param (WindMill-style)", async () => {
+        // Create catalog entry with token in URL (WindMill pattern)
+        const windmillCatalog = await InternalMcpCatalogModel.create({
+          name: "windmill-mcp-server",
+          serverType: "remote",
+          serverUrl:
+            "https://app.windmill.dev/api/mcp/w/demo/sse?token=lQqUwyDeiAHSKwarkbrq7WNUP2XZ1HdP",
+        });
+
+        // Create MCP server WITHOUT a secret (token is in URL)
+        const windmillServer = await McpServerModel.create({
+          name: "windmill-mcp-server",
+          catalogId: windmillCatalog.id,
+          serverType: "remote",
+        });
+
+        // Create tool and assign to agent
+        const tool = await ToolModel.createToolIfNotExists({
+          name: "windmill-mcp-server__test_tool",
+          description: "WindMill test tool",
+          parameters: {},
+          catalogId: windmillCatalog.id,
+          mcpServerId: windmillServer.id,
+        });
+
+        await AgentToolModel.create(agentId, tool.id);
+
+        // Mock successful tool call
+        mockCallTool.mockResolvedValue({
+          content: [{ type: "text", text: "WindMill response" }],
+          isError: false,
+        });
+
+        const toolCall = {
+          id: "call_windmill",
+          name: "windmill-mcp-server__test_tool",
+          arguments: {},
+        };
+
+        await mcpClient.executeToolCall(toolCall, agentId);
+
+        // Verify StreamableHTTPClientTransport was created with correct params
+        expect(mockStreamableHTTPClientTransport).toHaveBeenCalled();
+        const [url, options] =
+          mockStreamableHTTPClientTransport.mock.calls[0] || [];
+
+        // Verify URL contains token
+        expect(url.toString()).toContain(
+          "token=lQqUwyDeiAHSKwarkbrq7WNUP2XZ1HdP",
+        );
+
+        // Verify no Authorization header was added (URL has auth)
+        const headers = options?.requestInit?.headers;
+        expect(headers.get("Authorization")).toBeNull();
+      });
+
+      test("uses query parameter authentication when URL contains 'access_token' param", async () => {
+        // Create catalog with access_token in URL
+        const accessTokenCatalog = await InternalMcpCatalogModel.create({
+          name: "access-token-mcp-server",
+          serverType: "remote",
+          serverUrl: "https://api.example.com/mcp?access_token=abc123",
+        });
+
+        const accessTokenServer = await McpServerModel.create({
+          name: "access-token-mcp-server",
+          catalogId: accessTokenCatalog.id,
+          serverType: "remote",
+        });
+
+        const tool = await ToolModel.createToolIfNotExists({
+          name: "access-token-mcp-server__test_tool",
+          description: "Test tool",
+          parameters: {},
+          catalogId: accessTokenCatalog.id,
+          mcpServerId: accessTokenServer.id,
+        });
+
+        await AgentToolModel.create(agentId, tool.id);
+        mockCallTool.mockResolvedValue({
+          content: [{ type: "text", text: "Success" }],
+          isError: false,
+        });
+
+        const toolCall = {
+          id: "call_access_token",
+          name: "access-token-mcp-server__test_tool",
+          arguments: {},
+        };
+
+        await mcpClient.executeToolCall(toolCall, agentId);
+
+        expect(mockStreamableHTTPClientTransport).toHaveBeenCalled();
+        const [url, options] =
+          mockStreamableHTTPClientTransport.mock.calls[0] || [];
+
+        expect(url.toString()).toContain("access_token=abc123");
+        const headers = options?.requestInit?.headers;
+        expect(headers.get("Authorization")).toBeNull();
+      });
+
+      test("uses query parameter authentication when URL contains 'api_key' param", async () => {
+        // Create catalog with api_key in URL
+        const apiKeyCatalog = await InternalMcpCatalogModel.create({
+          name: "api-key-mcp-server",
+          serverType: "remote",
+          serverUrl: "https://api.example.com/mcp?api_key=xyz789",
+        });
+
+        const apiKeyServer = await McpServerModel.create({
+          name: "api-key-mcp-server",
+          catalogId: apiKeyCatalog.id,
+          serverType: "remote",
+        });
+
+        const tool = await ToolModel.createToolIfNotExists({
+          name: "api-key-mcp-server__test_tool",
+          description: "Test tool",
+          parameters: {},
+          catalogId: apiKeyCatalog.id,
+          mcpServerId: apiKeyServer.id,
+        });
+
+        await AgentToolModel.create(agentId, tool.id);
+        mockCallTool.mockResolvedValue({
+          content: [{ type: "text", text: "Success" }],
+          isError: false,
+        });
+
+        const toolCall = {
+          id: "call_api_key",
+          name: "api-key-mcp-server__test_tool",
+          arguments: {},
+        };
+
+        await mcpClient.executeToolCall(toolCall, agentId);
+
+        expect(mockStreamableHTTPClientTransport).toHaveBeenCalled();
+        const [url, options] =
+          mockStreamableHTTPClientTransport.mock.calls[0] || [];
+
+        expect(url.toString()).toContain("api_key=xyz789");
+        const headers = options?.requestInit?.headers;
+        expect(headers.get("Authorization")).toBeNull();
+      });
+
+      test("uses Bearer token authentication when URL has no auth params but secrets.access_token exists", async () => {
+        // This is the existing behavior - URL without auth params + secret with access_token
+        // The beforeEach already creates a GitHub-style server with secrets
+
+        // Create tool and assign to agent
+        const tool = await ToolModel.createToolIfNotExists({
+          name: "github-mcp-server__bearer_tool",
+          description: "GitHub tool with Bearer auth",
+          parameters: {},
+          catalogId,
+          mcpServerId,
+        });
+
+        // Set credentialSourceMcpServerId to ensure secrets are loaded
+        await AgentToolModel.create(agentId, tool.id, {
+          credentialSourceMcpServerId: mcpServerId,
+        });
+        mockCallTool.mockResolvedValue({
+          content: [{ type: "text", text: "GitHub response" }],
+          isError: false,
+        });
+
+        const toolCall = {
+          id: "call_bearer",
+          name: "github-mcp-server__bearer_tool",
+          arguments: {},
+        };
+
+        await mcpClient.executeToolCall(toolCall, agentId);
+
+        // Verify StreamableHTTPClientTransport was created with Bearer header
+        expect(mockStreamableHTTPClientTransport).toHaveBeenCalled();
+        const [, options] =
+          mockStreamableHTTPClientTransport.mock.calls[0] || [];
+
+        const headers = options?.requestInit?.headers;
+        expect(headers.get("Authorization")).toBe(
+          "Bearer test-github-token-123",
+        );
+      });
+
+      test("ignores secrets.access_token when URL already contains auth params", async () => {
+        // Create secret with access_token
+        const secret = await SecretModel.create({
+          secret: { access_token: "should-be-ignored" },
+        });
+
+        // Create catalog with token in URL
+        const mixedAuthCatalog = await InternalMcpCatalogModel.create({
+          name: "mixed-auth-mcp-server",
+          serverType: "remote",
+          serverUrl: "https://app.windmill.dev/api/mcp?token=url-token",
+        });
+
+        // Create MCP server WITH a secret (but URL has auth already)
+        const mixedAuthServer = await McpServerModel.create({
+          name: "mixed-auth-mcp-server",
+          catalogId: mixedAuthCatalog.id,
+          secretId: secret.id,
+          serverType: "remote",
+        });
+
+        const tool = await ToolModel.createToolIfNotExists({
+          name: "mixed-auth-mcp-server__test_tool",
+          description: "Mixed auth test tool",
+          parameters: {},
+          catalogId: mixedAuthCatalog.id,
+          mcpServerId: mixedAuthServer.id,
+        });
+
+        await AgentToolModel.create(agentId, tool.id);
+        mockCallTool.mockResolvedValue({
+          content: [{ type: "text", text: "Response" }],
+          isError: false,
+        });
+
+        const toolCall = {
+          id: "call_mixed",
+          name: "mixed-auth-mcp-server__test_tool",
+          arguments: {},
+        };
+
+        await mcpClient.executeToolCall(toolCall, agentId);
+
+        expect(mockStreamableHTTPClientTransport).toHaveBeenCalled();
+        const [url, options] =
+          mockStreamableHTTPClientTransport.mock.calls[0] || [];
+
+        // URL should still contain the token param
+        expect(url.toString()).toContain("token=url-token");
+
+        // No Authorization header should be added (URL auth takes precedence)
+        const headers = options?.requestInit?.headers;
+        expect(headers.get("Authorization")).toBeNull();
+      });
+
+      test("works without any authentication when URL has no auth and no secrets", async () => {
+        // Create catalog without auth in URL
+        const noAuthCatalog = await InternalMcpCatalogModel.create({
+          name: "no-auth-mcp-server",
+          serverType: "remote",
+          serverUrl: "https://api.public.example.com/mcp",
+        });
+
+        // Create MCP server without secret
+        const noAuthServer = await McpServerModel.create({
+          name: "no-auth-mcp-server",
+          catalogId: noAuthCatalog.id,
+          serverType: "remote",
+        });
+
+        const tool = await ToolModel.createToolIfNotExists({
+          name: "no-auth-mcp-server__test_tool",
+          description: "Public test tool",
+          parameters: {},
+          catalogId: noAuthCatalog.id,
+          mcpServerId: noAuthServer.id,
+        });
+
+        await AgentToolModel.create(agentId, tool.id);
+        mockCallTool.mockResolvedValue({
+          content: [{ type: "text", text: "Public response" }],
+          isError: false,
+        });
+
+        const toolCall = {
+          id: "call_no_auth",
+          name: "no-auth-mcp-server__test_tool",
+          arguments: {},
+        };
+
+        await mcpClient.executeToolCall(toolCall, agentId);
+
+        expect(mockStreamableHTTPClientTransport).toHaveBeenCalled();
+        const [, options] =
+          mockStreamableHTTPClientTransport.mock.calls[0] || [];
+
+        // No Authorization header should be set
+        const headers = options?.requestInit?.headers;
+        expect(headers.get("Authorization")).toBeNull();
+      });
+
+      test("handles complex query strings with token param", async () => {
+        // Create catalog with complex URL containing multiple query params
+        const complexUrlCatalog = await InternalMcpCatalogModel.create({
+          name: "complex-url-mcp-server",
+          serverType: "remote",
+          serverUrl:
+            "https://app.windmill.dev/api/mcp/w/demo/sse?workspace=demo&format=json&token=secret123&version=2",
+        });
+
+        const complexUrlServer = await McpServerModel.create({
+          name: "complex-url-mcp-server",
+          catalogId: complexUrlCatalog.id,
+          serverType: "remote",
+        });
+
+        const tool = await ToolModel.createToolIfNotExists({
+          name: "complex-url-mcp-server__test_tool",
+          description: "Complex URL test tool",
+          parameters: {},
+          catalogId: complexUrlCatalog.id,
+          mcpServerId: complexUrlServer.id,
+        });
+
+        await AgentToolModel.create(agentId, tool.id);
+        mockCallTool.mockResolvedValue({
+          content: [{ type: "text", text: "Success" }],
+          isError: false,
+        });
+
+        const toolCall = {
+          id: "call_complex",
+          name: "complex-url-mcp-server__test_tool",
+          arguments: {},
+        };
+
+        await mcpClient.executeToolCall(toolCall, agentId);
+
+        expect(mockStreamableHTTPClientTransport).toHaveBeenCalled();
+        const [url, options] =
+          mockStreamableHTTPClientTransport.mock.calls[0] || [];
+
+        // URL should preserve all query params
+        expect(url.toString()).toContain("workspace=demo");
+        expect(url.toString()).toContain("format=json");
+        expect(url.toString()).toContain("token=secret123");
+        expect(url.toString()).toContain("version=2");
+
+        // No Authorization header (URL has token param)
+        const headers = options?.requestInit?.headers;
+        expect(headers.get("Authorization")).toBeNull();
       });
     });
   });

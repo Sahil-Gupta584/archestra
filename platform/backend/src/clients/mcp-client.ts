@@ -319,7 +319,16 @@ class McpClient {
       }
 
       const headers: Record<string, string> = {};
-      if (secrets.access_token) {
+
+      // Check if URL already contains authentication parameters
+      const url = new URL(catalogItem.serverUrl);
+      const hasAuthInUrl =
+        url.searchParams.has("token") ||
+        url.searchParams.has("access_token") ||
+        url.searchParams.has("api_key");
+
+      // Only add Bearer token if URL doesn't already contain auth and we have access_token
+      if (!hasAuthInUrl && secrets.access_token) {
         headers.Authorization = `Bearer ${secrets.access_token}`;
       }
 
